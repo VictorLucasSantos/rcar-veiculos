@@ -1,10 +1,12 @@
+import json
+import re
 from io import BytesIO
 from urllib.parse import unquote
 
 from PIL import Image
 from sqlalchemy import select
 
-from app.models import Veiculo
+from app.models import Foto, Veiculo
 from app.servicos import ler_centavos, ler_inteiro, quilometros, reais, slugificar
 from tests.conftest import ONIX, csrf_de
 
@@ -187,10 +189,42 @@ def test_demonstracao_so_existe_na_exportacao(cadastrar, admin, cliente, sessao)
     assert "data-demo-veiculo" in cliente.get("/demo/veiculo", headers=cabecalhos).text
     dados = cliente.get("/demo/estoque.json", headers=cabecalhos).json()
     # O painel vê também os vendidos.
-    [item] = dados["veiculos"]
+    [item] = [d for d in dados["veiculos"] if not d.get("exemplo")]
     assert item["modelo"] == "Onix" and item["situacao"] == "vendido" and item["vendido_em"]
     assert item["preco"] == 8990000 and item["fotos"] == []
     assert dados["loja"]["whatsapp"] and dados["versao"]
+
+
+def test_demonstracao_tem_historico_de_exemplo(cadastrar, cliente):
+    cadastrar()
+    dados = cliente.get("/demo/estoque.json", headers={"X-Exportar-Estatico": "1"}).json()
+    exemplos = [v for v in dados["veiculos"] if v.get("exemplo")]
+    assert len(exemplos) >= 12 * 6 - 12
+    assert all(v["situacao"] == "vendido" and v["vendido_em"] and v["criado_em"] < v["vendido_em"] for v in exemplos)
+    # Sempre o mesmo histórico (semente fixa) para a demonstração não mudar a cada exportação.
+    de_novo = cliente.get("/demo/estoque.json", headers={"X-Exportar-Estatico": "1"}).json()
+    assert [v["preco"] for v in de_novo["veiculos"]] == [v["preco"] for v in dados["veiculos"]]
+
+
+def test_dashboard_de_vendas_usa_so_dados_reais(cadastrar, admin, sessao):
+    cadastrar()
+    v = _veiculo(sessao)
+    csrf = csrf_de(admin.get("/admin/veiculos").text)
+    admin.post(f"/admin/veiculos/{v.id}/situacao", data={"csrf": csrf, "situacao": "vendido"})
+    pagina = admin.get("/admin/vendas")
+    assert pagina.status_code == 200 and "vendas.js" in pagina.text
+    dados = json.loads(re.search(r'data-veiculos>(.*?)</script>', pagina.text, re.S).group(1))
+    assert [d["situacao"] for d in dados] == ["vendido"] and not any(d.get("exemplo") for d in dados)
+
+
+def test_foto_ilustrativa_mostra_selo_e_credito(cadastrar, cliente, sessao):
+    cadastrar()
+    v = _veiculo(sessao)
+    v.fotos.append(Foto(arquivo="x.jpg", credito="Fulano · CC BY-SA 4.0 · Wikimedia Commons", fonte="https://commons.wikimedia.org/wiki/File:X.jpg"))
+    sessao.commit()
+    assert "Foto ilustrativa" in cliente.get("/estoque").text
+    pagina = cliente.get(f"/veiculo/{v.slug}").text
+    assert "não é o carro à venda" in pagina and "Fulano · CC BY-SA 4.0" in pagina
 
 
 def test_site_sem_laco_nem_financiamento(cadastrar, cliente, sessao):

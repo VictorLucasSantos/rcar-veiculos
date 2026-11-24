@@ -25,6 +25,7 @@ from app.servicos import (
     salvar_config,
     salvar_foto,
     slug_unico,
+    veiculo_para_json,
 )
 from app.web import avisar, render
 
@@ -362,6 +363,18 @@ async def apagar_veiculo(
         apagar_arquivo_foto(nome)
     avisar(request, f"“{veiculo.titulo}” apagado.")
     return voltar("/admin/veiculos")
+
+
+# ---------------------------------------------------------------- vendas
+
+
+@roteador.get("/vendas")
+def vendas(request: Request, usuario: Usuario = Depends(usuario_logado), sessao: Session = Depends(obter_sessao)):
+    """Dashboard: os números e gráficos são calculados no navegador (static/js/vendas.js)."""
+    veiculos = sessao.scalars(select(Veiculo).options(selectinload(Veiculo.fotos)).order_by(Veiculo.id))
+    return render(
+        request, sessao, "admin/vendas.html", {"usuario": usuario, "veiculos": [veiculo_para_json(v) for v in veiculos]}
+    )
 
 
 # ---------------------------------------------------------------- configurações

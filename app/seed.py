@@ -8,7 +8,7 @@ import os
 import secrets
 import sys
 
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
 from sqlalchemy.orm import Session
 
 from app import config
@@ -16,9 +16,18 @@ from app.db import Base, SessaoLocal, engine
 from app.models import Usuario
 from app.servicos import gerar_hash
 
+# Colunas acrescentadas depois da primeira versão: create_all não altera tabela que já existe.
+COLUNAS_NOVAS = {"foto": {"credito": "VARCHAR(300) NOT NULL DEFAULT ''", "fonte": "VARCHAR(300) NOT NULL DEFAULT ''"}}
+
 
 def criar_tabelas() -> None:
     Base.metadata.create_all(engine)
+    with engine.begin() as conexao:
+        for tabela, colunas in COLUNAS_NOVAS.items():
+            existentes = {c["name"] for c in inspect(conexao).get_columns(tabela)}
+            for nome, tipo in colunas.items():
+                if nome not in existentes:
+                    conexao.execute(text(f"ALTER TABLE {tabela} ADD COLUMN {nome} {tipo}"))
 
 
 def garantir_admin(sessao: Session, nova_senha: bool = False) -> str | None:

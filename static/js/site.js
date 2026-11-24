@@ -109,6 +109,8 @@
     ${v.fotos.length > 1 ? `<div class="miniaturas" aria-label="Fotos">${v.fotos.map((f, i) => `
       <button type="button" data-foto="${D.esc(D.foto(f))}" data-alt="${D.esc(nomeCompleto)}, foto ${i + 1} de ${v.fotos.length}" ${i ? "" : 'aria-current="true"'} aria-label="Ver foto ${i + 1}">
         <img src="${D.esc(D.foto(f))}" alt="" loading="lazy" width="92" height="69"></button>`).join("")}</div>` : ""}
+    ${capa && D.credito(v, capa) ? `<p class="credito-foto">Foto ilustrativa do modelo, não é o carro à venda. Peça as fotos reais pelo WhatsApp.
+      <a href="${D.esc(D.credito(v, capa).fonte)}" target="_blank" rel="noopener">Foto: ${D.esc(D.credito(v, capa).texto)}</a></p>` : ""}
   </div>
   <div class="lado">
     <h1 class="cromo">${D.esc(D.nome(v))}</h1>

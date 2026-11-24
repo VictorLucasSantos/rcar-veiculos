@@ -54,6 +54,8 @@
   const ano = (v) => (v.ano_fabricacao === v.ano_modelo ? String(v.ano_modelo) : `${v.ano_fabricacao}/${v.ano_modelo}`);
   const foto = (caminho) => (caminho.startsWith("data:") ? caminho : raiz + caminho);
   const noSite = (v) => v.ativo && v.situacao !== "vendido";
+  // Foto ilustrativa (de outro carro do mesmo modelo): {texto, fonte}; foto enviada no painel não tem.
+  const credito = (v, caminho) => (v.creditos || {})[caminho] || null;
   const linkVeiculo = (v) => `${raiz}/demo/veiculo/?id=${v.id}`;
 
   // Mesma ordem de consulta_estoque() no servidor: destaques, depois reservados por último, mais novos antes.
@@ -90,6 +92,7 @@
    data-busca="${esc(`${titulo(v)} ${v.cor} ${ano(v)}`.toLowerCase())}">
   <div class="foto">
     ${capa ? `<img src="${esc(foto(capa))}" alt="${esc(`${titulo(v)} ${ano(v)}`)}" width="640" height="480" loading="lazy" decoding="async">` : '<span class="vazia">Foto em breve</span>'}
+    ${capa && credito(v, capa) ? '<span class="selo-foto">Foto ilustrativa</span>' : ""}
     ${selo(v)}
   </div>
   <div class="info">
@@ -108,6 +111,6 @@
 
   window.RcarDemo = {
     CHAVE, raiz, SITUACOES, ler, gravar, apagar, publicado, esc, milhar, reais, km, nome, titulo, ano,
-    foto, noSite, estoque, linkVeiculo, selo, precoHTML, fichaCurta, cartao, linkWhatsapp,
+    foto, noSite, credito, estoque, linkVeiculo, selo, precoHTML, fichaCurta, cartao, linkWhatsapp,
   };
 })();

@@ -27,6 +27,7 @@
   <div class="foto">
     {% if veiculo.foto_capa %}
     <img src="/media/{{ veiculo.foto_capa.arquivo }}" alt="{{ veiculo.titulo }} {{ veiculo.ano }}" width="640" height="480" {% if lazy %}loading="lazy"{% endif %} decoding="async">
+    {% if veiculo.foto_capa.ilustrativa %}<span class="selo-foto">Foto ilustrativa</span>{% endif %}
     {% else %}<span class="vazia">Foto em breve</span>{% endif %}
     {{ selo(veiculo) }}
   </div>

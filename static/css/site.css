@@ -91,6 +91,9 @@ section.block{padding-block:84px}
 .selo{position:absolute;left:12px;top:12px;font:italic 700 .8rem/1 var(--display);letter-spacing:.06em;text-transform:uppercase;padding:7px 10px;border-radius:4px;background:var(--noite);color:var(--texto)}
 .selo.reservado{background:var(--lustre);color:#1a1405}
 .selo.destaque{background:var(--vermelho);color:#fff}
+.selo-foto{position:absolute;right:10px;bottom:10px;font-size:.72rem;font-weight:600;letter-spacing:.02em;padding:4px 8px;border-radius:4px;background:rgba(13,14,17,.78);color:var(--texto)}
+.credito-foto{margin:0;font-size:.82rem;color:var(--apagado)}
+.credito-foto a{color:var(--apagado);text-underline-offset:2px}
 .carro .info{display:grid;gap:6px;padding:16px 18px 18px;align-content:start}
 .carro h3{font-size:1.45rem;font-weight:700}
 .carro .versao{color:var(--apagado);font-size:.92rem;margin:0}

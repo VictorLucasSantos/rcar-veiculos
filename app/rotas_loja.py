@@ -1,7 +1,8 @@
 """Páginas públicas: início, estoque e página do veículo. E as páginas da demonstração do painel,
 que só existem na cópia estática do GitHub Pages."""
 
-from datetime import date, datetime
+import random
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import PlainTextResponse, Response
@@ -10,7 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.db import obter_sessao
 from app.models import CAMBIOS, COMBUSTIVEIS, MARCAS, Veiculo
-from app.servicos import ler_config, link_whatsapp, mensagem_interesse
+from app.servicos import ler_config, link_whatsapp, mensagem_interesse, veiculo_para_json
 from app.web import eh_exportacao, render, url_publica
 
 roteador = APIRouter()
@@ -92,35 +93,51 @@ def demo_estoque(request: Request, sessao: Session = Depends(obter_sessao)):
     """Todos os veículos (também vendidos e ocultos), como o painel vê. Cada exportação é uma versão nova."""
     _so_na_exportacao(request)
     loja = ler_config(sessao)
-    veiculos = sessao.scalars(select(Veiculo).options(selectinload(Veiculo.fotos)).order_by(Veiculo.id))
+    veiculos = [
+        veiculo_para_json(v)
+        for v in sessao.scalars(select(Veiculo).options(selectinload(Veiculo.fotos)).order_by(Veiculo.id))
+    ]
     return {
         "versao": datetime.now().isoformat(timespec="seconds"),
         "loja": {chave: loja[chave] for chave in ("nome_loja", "whatsapp", "cidade")},
-        "veiculos": [
-            {
-                "id": v.id,
-                "marca": v.marca,
-                "modelo": v.modelo,
-                "versao": v.versao,
-                "ano_fabricacao": v.ano_fabricacao,
-                "ano_modelo": v.ano_modelo,
-                "km": v.km,
-                "cambio": v.cambio,
-                "combustivel": v.combustivel,
-                "cor": v.cor,
-                "preco": v.preco,
-                "descricao": v.descricao,
-                "opcionais": v.opcionais,
-                "situacao": v.situacao,
-                "ativo": v.ativo,
-                "destaque": v.destaque,
-                "criado_em": v.criado_em.isoformat(timespec="seconds"),
-                "vendido_em": v.vendido_em.isoformat(timespec="seconds") if v.vendido_em else None,
-                "fotos": [f"/media/{f.arquivo}" for f in v.fotos],
-            }
-            for v in veiculos
-        ],
+        "veiculos": veiculos + vendas_de_exemplo(veiculos),
     }
+
+
+def vendas_de_exemplo(veiculos: list[dict], meses: int = 12) -> list[dict]:
+    """Histórico fictício de vendas para o dashboard da demonstração, marcado com "exemplo".
+
+    Sorteia (sempre igual, semente fixa) carros parecidos com o estoque, com preço variando até 12%,
+    6 a 13 vendas por mês nos últimos `meses`, e 5 a 75 dias entre o cadastro e a venda."""
+    modelos = [v for v in veiculos if v["preco"]]
+    if not modelos:
+        return []
+    sorteio = random.Random(2026)
+    hoje = datetime.now()
+    proximo_id = max(v["id"] for v in veiculos) + 1000
+    vendas = []
+    for atras in range(meses - 1, -1, -1):
+        ano_mes, mes = divmod(hoje.year * 12 + hoje.month - 1 - atras, 12)
+        inicio = datetime(ano_mes, mes + 1, 1)
+        ultimo_dia = hoje.day if atras == 0 else 28
+        for _ in range(sorteio.randint(6, 13) if atras else sorteio.randint(2, 6)):
+            base = sorteio.choice(modelos)
+            vendido_em = inicio.replace(day=sorteio.randint(1, ultimo_dia), hour=sorteio.randint(9, 18))
+            ano = base["ano_modelo"] - sorteio.choice([0, 0, 1, 2])
+            vendas.append({
+                **base,
+                "id": proximo_id,
+                "ano_fabricacao": ano,
+                "ano_modelo": ano,
+                "preco": round(base["preco"] * sorteio.uniform(0.88, 1.08) / 50000) * 50000,
+                "situacao": "vendido",
+                "destaque": False,
+                "criado_em": (vendido_em - timedelta(days=sorteio.randint(5, 75))).isoformat(timespec="seconds"),
+                "vendido_em": vendido_em.isoformat(timespec="seconds"),
+                "exemplo": True,
+            })
+            proximo_id += 1
+    return vendas
 
 
 # ---------------------------------------------------------------- SEO

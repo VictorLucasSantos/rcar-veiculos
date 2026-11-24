@@ -27,6 +27,10 @@
         {% endfor %}
       </div>
       {% endif %}
+      {% if veiculo.foto_capa and veiculo.foto_capa.ilustrativa %}
+      <p class="credito-foto">Foto ilustrativa do modelo, não é o carro à venda. Peça as fotos reais pelo WhatsApp.
+        <a href="{{ veiculo.foto_capa.fonte }}" target="_blank" rel="noopener">Foto: {{ veiculo.foto_capa.credito }}</a></p>
+      {% endif %}
     </div>
 
     <div class="lado">

@@ -85,8 +85,15 @@ class Foto(Base):
     veiculo_id: Mapped[int] = mapped_column(ForeignKey("veiculo.id", ondelete="CASCADE"))
     arquivo: Mapped[str] = mapped_column(String(200))
     ordem: Mapped[int] = mapped_column(Integer, default=0)
+    # Preenchidos só em foto ilustrativa (de outro carro do mesmo modelo): autor, licença e página de origem.
+    credito: Mapped[str] = mapped_column(String(300), default="")
+    fonte: Mapped[str] = mapped_column(String(300), default="")
 
     veiculo: Mapped[Veiculo] = relationship(back_populates="fotos")
+
+    @property
+    def ilustrativa(self) -> bool:
+        return bool(self.credito)
 
 
 class Configuracao(Base):

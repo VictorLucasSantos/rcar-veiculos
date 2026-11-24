@@ -17,6 +17,8 @@ Site da R-CAR Veículos (Jaru-RO), com showroom, estoque de carros, entregas e c
   - Vendido sai do site e conta no mês.
 - Fotos: enviar várias de uma vez (redimensionadas automaticamente), escolher a capa e apagar.
 - Destaque: o carro aparece primeiro, com selo vermelho. "Mostrar no site" desmarcado esconde o carro sem apagar.
+- Vendas: dashboard com faturamento, ticket médio, tempo médio até vender, média por mês e valor do estoque; gráficos por mês (carros ou faturamento), por marca e por faixa de preço; últimas vendas. Filtra por período e marca. Usa os carros marcados como vendidos (data e preço do cadastro); os cálculos ficam em `static/js/vendas.js`, o mesmo arquivo da demonstração.
+- Fotos ilustrativas: uma foto tem `credito` e `fonte` quando é de outro carro do mesmo modelo (por exemplo, do Wikimedia Commons). O site mostra o selo "Foto ilustrativa" no card e o crédito do autor e da licença na página do carro.
 - Loja: WhatsApp que recebe os interessados, Instagram, endereço, cidade e horário.
 - Minha senha: trocar a senha do painel.
 
@@ -66,6 +68,7 @@ A cópia leva um **painel de demonstração** em `/admin/` (por exemplo https://
 - Entra com qualquer senha e tem as mesmas telas do painel real: início, lista com situação, cadastro, edição, fotos e apagar.
 - Tudo fica guardado só no navegador de quem está testando. Enquanto a demonstração está ativa, o site aberto nesse navegador mostra o estoque alterado, com uma faixa "Demonstração · abrir o painel".
 - "Restaurar estoque" volta ao que está publicado. Publicar uma cópia nova também recomeça a demonstração.
+- O dashboard de Vendas da demonstração traz 12 meses de **vendas fictícias**, com aviso na tela, geradas por `vendas_de_exemplo()` em `app/rotas_loja.py` (sempre as mesmas). O painel real nunca usa esses dados.
 - Arquivos: `static/js/demo.js` (dados e cartões), `static/js/demo-admin.js` (telas), `app/templates/demo/` e as rotas `/demo/*` em `app/rotas_loja.py`, que só respondem ao exportador.
 
 Para atualizar depois de mudar o estoque no painel, gere a cópia a partir do site no Render (ou do local) e publique:

@@ -152,6 +152,33 @@ def mudar_situacao(veiculo: Veiculo, nova: str) -> None:
     veiculo.situacao = nova
 
 
+def veiculo_para_json(v: Veiculo) -> dict:
+    """Dados do veículo para o JavaScript (dashboard de vendas e demonstração do painel)."""
+    return {
+        "id": v.id,
+        "marca": v.marca,
+        "modelo": v.modelo,
+        "versao": v.versao,
+        "ano_fabricacao": v.ano_fabricacao,
+        "ano_modelo": v.ano_modelo,
+        "km": v.km,
+        "cambio": v.cambio,
+        "combustivel": v.combustivel,
+        "cor": v.cor,
+        "preco": v.preco,
+        "descricao": v.descricao,
+        "opcionais": v.opcionais,
+        "situacao": v.situacao,
+        "ativo": v.ativo,
+        "destaque": v.destaque,
+        "criado_em": v.criado_em.isoformat(timespec="seconds"),
+        "vendido_em": v.vendido_em.isoformat(timespec="seconds") if v.vendido_em else None,
+        "fotos": [f"/media/{f.arquivo}" for f in v.fotos],
+        # Fotos ilustrativas (não são do carro à venda) levam crédito do autor e da licença.
+        "creditos": {f"/media/{f.arquivo}": {"texto": f.credito, "fonte": f.fonte} for f in v.fotos if f.credito},
+    }
+
+
 def mensagem_interesse(veiculo: Veiculo, loja: dict[str, str], url: str = "") -> str:
     partes = [f"Olá, {loja['nome_loja']}! Tenho interesse no {veiculo.titulo} {veiculo.ano}"]
     if veiculo.preco:

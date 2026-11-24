@@ -310,7 +310,11 @@ ${v ? `
     const { partes, parametros } = rota();
     veiculoAberto = null;
     let secao = "inicio";
-    if (partes[0] === "veiculos") {
+    if (partes[0] === "vendas") {
+      secao = "vendas";
+      app.innerHTML = '<div class="painel-cabeca"><h1>Vendas</h1></div><div class="dashboard" data-dashboard></div>';
+      window.RcarVendas.montar(app.querySelector("[data-dashboard]"), dados.veiculos);
+    } else if (partes[0] === "veiculos") {
       secao = "veiculos";
       if (partes[1] === "novo") app.innerHTML = telaFormulario(null);
       else if (partes[1]) {
