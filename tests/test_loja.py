@@ -227,6 +227,88 @@ def test_foto_ilustrativa_mostra_selo_e_credito(cadastrar, cliente, sessao):
     assert "não é o carro à venda" in pagina and "Fulano · CC BY-SA 4.0" in pagina
 
 
+def _salvar(admin, v, **mudancas):
+    csrf = csrf_de(admin.get(f"/admin/veiculos/{v.id}").text)
+    return admin.post(f"/admin/veiculos/{v.id}", data={**ONIX, **mudancas, "csrf": csrf}, follow_redirects=False)
+
+
+def test_baixar_preco_vira_oferta_de_por(cadastrar, admin, cliente, sessao):
+    cadastrar()
+    v = _veiculo(sessao)
+    _salvar(admin, v, preco="84.900")
+    v = _veiculo(sessao)
+    assert v.preco_anterior == 8990000 and v.desconto == 500000 and v.desconto_pct == 6
+    assert "Preço baixou" in admin.get(f"/admin/veiculos/{v.id}").text
+
+    estoque = cliente.get("/estoque").text
+    assert "Baixou 6%" in estoque and "<s>R$ 89.900</s>" in estoque and "R$ 5.000 a menos" in estoque
+    assert 'data-desconto="500000"' in estoque
+
+    # Apagar o "De" encerra a oferta e não volta sozinho na próxima edição.
+    _salvar(admin, v, preco="84.900", preco_anterior="")
+    assert _veiculo(sessao).preco_anterior is None
+    _salvar(admin, v, preco="84.900", preco_anterior="")
+    assert _veiculo(sessao).preco_anterior is None
+
+
+def test_preco_de_precisa_ser_maior(cadastrar):
+    r = cadastrar(preco="80.000", preco_anterior="79.000")
+    assert r.status_code == 422 and "precisa ser maior" in r.text
+
+
+def test_preco_subir_acima_do_de_encerra_oferta(cadastrar, admin, sessao):
+    cadastrar(preco="80.000", preco_anterior="90.000")
+    v = _veiculo(sessao)
+    assert v.desconto == 1000000
+    _salvar(admin, v, preco="95.000", preco_anterior="")
+    assert _veiculo(sessao).desconto == 0
+
+
+def test_vender_pede_valores_e_dashboard_ve_margem(cadastrar, admin, sessao):
+    cadastrar(preco_compra="70.000")
+    v = _veiculo(sessao)
+    csrf = csrf_de(admin.get("/admin/veiculos").text)
+    r = admin.post(f"/admin/veiculos/{v.id}/situacao", data={"csrf": csrf, "situacao": "vendido"}, follow_redirects=False)
+    assert r.headers["location"] == f"/admin/veiculos/{v.id}#venda"
+    _salvar(admin, v, situacao="vendido", preco_compra="70.000", preco_venda="86.000", origem_venda="Instagram")
+    v = _veiculo(sessao)
+    assert (v.preco_venda, v.preco_compra, v.origem_venda) == (8600000, 7000000, "Instagram")
+    assert "Margem: R$ 16.000" in admin.get(f"/admin/veiculos/{v.id}").text
+    pagina = admin.get("/admin/vendas").text
+    [dado] = json.loads(re.search(r"data-veiculos>(.*?)</script>", pagina, re.S).group(1))
+    assert dado["preco_venda"] == 8600000 and dado["preco_compra"] == 7000000
+
+
+def test_origem_invalida_e_recusada(cadastrar):
+    assert cadastrar(origem_venda="Rádio").status_code == 422
+
+
+def test_custo_e_venda_nao_vao_para_a_copia_publica(cadastrar, admin, cliente, sessao):
+    cadastrar(preco_compra="70.000", preco_venda="86.000", origem_venda="Salão")
+    dados = cliente.get("/demo/estoque.json", headers={"X-Exportar-Estatico": "1"}).json()
+    [real] = [d for d in dados["veiculos"] if not d.get("exemplo")]
+    assert real["preco_compra"] is None and real["preco_venda"] is None and real["origem_venda"] == ""
+    assert "70.000" not in cliente.get(f"/veiculo/{_veiculo(sessao).slug}").text
+
+
+def test_completar_fichas(cadastrar, admin, sessao):
+    cadastrar(km="", cambio="", combustivel="")
+    v = _veiculo(sessao)
+    assert v.ficha_incompleta
+    pagina = admin.get("/admin/fichas").text
+    assert f'name="km-{v.id}"' in pagina
+    assert "sem km, câmbio ou combustível" in admin.get("/admin").text
+    slug = v.slug
+    admin.post("/admin/fichas", data={
+        "csrf": csrf_de(pagina), "id": str(v.id), f"versao-{v.id}": "1.0 LT", f"km-{v.id}": "52.300",
+        f"cambio-{v.id}": "Manual", f"combustivel-{v.id}": "Flex", f"cor-{v.id}": "Prata", f"preco_compra-{v.id}": "71.000",
+    })
+    v = _veiculo(sessao)
+    assert (v.versao, v.km, v.cambio, v.combustivel, v.cor, v.preco_compra) == ("1.0 LT", 52300, "Manual", "Flex", "Prata", 7100000)
+    assert not v.ficha_incompleta and v.slug == slug
+    assert f'name="km-{v.id}"' not in admin.get("/admin/fichas").text
+
+
 def test_site_sem_laco_nem_financiamento(cadastrar, cliente, sessao):
     cadastrar()
     v = _veiculo(sessao)

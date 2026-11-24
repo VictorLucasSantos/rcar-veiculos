@@ -30,6 +30,9 @@
   const dataBR = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
   const dias = (de, ate) => Math.max(0, Math.round((new Date(ate) - new Date(de)) / 86400000));
   const titulo = (v) => `${v.marca} ${v.modelo} ${v.versao || ""}`.trim();
+  // Valor da venda: o fechado com o cliente; sem ele, o preço anunciado.
+  const valorVenda = (v) => v.preco_venda ?? v.preco ?? 0;
+  const margem = (v) => valorVenda(v) - v.preco_compra;
   const ano = (v) => (v.ano_fabricacao === v.ano_modelo ? String(v.ano_modelo) : `${v.ano_fabricacao}/${v.ano_modelo}`);
 
   function chaveMes(data) {
@@ -235,9 +238,17 @@
         .filter((v) => v.vendido_em.slice(0, 7) >= inicio && daMarca(v))
         .sort((a, b) => (a.vendido_em < b.vendido_em ? 1 : -1));
       const estoque = veiculos.filter((v) => v.ativo && v.situacao !== "vendido" && daMarca(v));
-      const comPreco = vendidos.filter((v) => v.preco);
-      const faturamento = comPreco.reduce((s, v) => s + v.preco, 0);
+      const comPreco = vendidos.filter((v) => valorVenda(v));
+      const faturamento = comPreco.reduce((s, v) => s + valorVenda(v), 0);
       const ticket = comPreco.length ? faturamento / comPreco.length : 0;
+      // Margem só onde o custo foi informado; desconto na negociação só onde há anúncio e venda.
+      const comCusto = comPreco.filter((v) => v.preco_compra);
+      const lucro = comCusto.reduce((s, v) => s + margem(v), 0);
+      const vendaComCusto = comCusto.reduce((s, v) => s + valorVenda(v), 0);
+      const negociados = vendidos.filter((v) => v.preco && v.preco_venda);
+      const descontoNegociacao = negociados.length
+        ? negociados.reduce((s, v) => s + (v.preco - v.preco_venda) / v.preco, 0) / negociados.length
+        : null;
       const tempoMedio = vendidos.length ? vendidos.reduce((s, v) => s + dias(v.criado_em, v.vendido_em), 0) / vendidos.length : 0;
       const valorEstoque = estoque.reduce((s, v) => s + (v.preco || 0), 0);
       const precoMedioEstoque = estoque.filter((v) => v.preco).length ? valorEstoque / estoque.filter((v) => v.preco).length : 0;
@@ -249,7 +260,7 @@
         const m = porMes[v.vendido_em.slice(0, 7)];
         if (!m) continue;
         m.quantidade++;
-        m.faturamento += v.preco || 0;
+        m.faturamento += valorVenda(v) || 0;
       }
 
       // Por marca: as 7 maiores e o resto em "Outras"
@@ -257,8 +268,20 @@
       for (const v of vendidos) {
         somaMarca[v.marca] ??= { quantidade: 0, faturamento: 0 };
         somaMarca[v.marca].quantidade++;
-        somaMarca[v.marca].faturamento += v.preco || 0;
+        somaMarca[v.marca].faturamento += valorVenda(v) || 0;
       }
+
+      // Por origem do comprador (o que não foi informado vai por último)
+      const somaOrigem = {};
+      for (const v of vendidos) {
+        const chave = v.origem_venda || "Não informado";
+        somaOrigem[chave] ??= { quantidade: 0, faturamento: 0 };
+        somaOrigem[chave].quantidade++;
+        somaOrigem[chave].faturamento += valorVenda(v) || 0;
+      }
+      const porOrigem = Object.entries(somaOrigem).sort(
+        (a, b) => (a[0] === "Não informado") - (b[0] === "Não informado") || b[1].quantidade - a[1].quantidade
+      );
       let porMarca = Object.entries(somaMarca).sort((a, b) => b[1].quantidade - a[1].quantidade || b[1].faturamento - a[1].faturamento);
       if (porMarca.length > 8) {
         const resto = porMarca.slice(7).reduce((s, [, m]) => ({ quantidade: s.quantidade + m.quantidade, faturamento: s.faturamento + m.faturamento }), { quantidade: 0, faturamento: 0 });
@@ -267,8 +290,8 @@
 
       // Por faixa de preço
       const porFaixa = FAIXAS.map(([rotulo, de, ate]) => {
-        const lista = comPreco.filter((v) => v.preco / 100 >= de && v.preco / 100 < ate);
-        return { rotulo, quantidade: lista.length, faturamento: lista.reduce((s, v) => s + v.preco, 0) };
+        const lista = comPreco.filter((v) => valorVenda(v) / 100 >= de && valorVenda(v) / 100 < ate);
+        return { rotulo, quantidade: lista.length, faturamento: lista.reduce((s, v) => s + valorVenda(v), 0) };
       });
 
       const metricaFat = estado.metrica === "faturamento";
@@ -289,14 +312,21 @@
         desenhar();
       });
 
+      const porcento = (x) => `${(x * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+      const mediaMes = (vendidos.length / meses.length).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+      const kpi = (rotulo, valor, nota) => el("div", { class: "kpi" }, [el("span", { texto: rotulo }), el("b", { texto: valor }), el("small", { texto: nota })]);
       const kpis = el("div", { class: "kpis" }, [
         el("div", { class: "kpi heroi" }, [el("span", { texto: "Faturamento no período" }), el("b", { texto: reais(faturamento) }),
-          el("small", { texto: `${plural(vendidos.length, "carro vendido", "carros vendidos")} · ${meses.length} ${meses.length === 1 ? "mês" : "meses"}` })]),
-        el("div", { class: "kpi" }, [el("span", { texto: "Ticket médio" }), el("b", { texto: ticket ? reais(ticket) : "—" }), el("small", { texto: "preço médio de venda" })]),
-        el("div", { class: "kpi" }, [el("span", { texto: "Tempo médio até vender" }), el("b", { texto: vendidos.length ? plural(Math.round(tempoMedio), "dia", "dias") : "—" }), el("small", { texto: "do cadastro à venda" })]),
-        el("div", { class: "kpi" }, [el("span", { texto: "Média por mês" }), el("b", { texto: (vendidos.length / meses.length).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) }), el("small", { texto: "carros vendidos" })]),
-        el("div", { class: "kpi" }, [el("span", { texto: "Estoque no site" }), el("b", { texto: reaisCurto(valorEstoque) }),
-          el("small", { texto: `${plural(estoque.length, "carro", "carros")} · preço médio ${precoMedioEstoque ? reaisCurto(precoMedioEstoque) : "—"}` })]),
+          el("small", { texto: `${plural(vendidos.length, "carro vendido", "carros vendidos")} em ${meses.length} ${meses.length === 1 ? "mês" : "meses"} · média de ${mediaMes} por mês` })]),
+        kpi("Lucro bruto", comCusto.length ? reais(lucro) : "—",
+          comCusto.length ? `margem de ${porcento(lucro / vendaComCusto)} sobre a venda · ${plural(comCusto.length, "carro", "carros")} com custo` : "informe o preço de compra na venda"),
+        kpi("Margem média por carro", comCusto.length ? reais(lucro / comCusto.length) : "—", "venda menos compra"),
+        kpi("Ticket médio", ticket ? reais(ticket) : "—", "valor médio de venda"),
+        kpi("Desconto na negociação", descontoNegociacao == null ? "—" : porcento(descontoNegociacao),
+          descontoNegociacao == null ? "informe o valor da venda" : "média entre anúncio e venda"),
+        kpi("Tempo médio até vender", vendidos.length ? plural(Math.round(tempoMedio), "dia", "dias") : "—", "do cadastro à venda"),
+        kpi("Estoque no site", reaisCurto(valorEstoque),
+          `${plural(estoque.length, "carro", "carros")} · preço médio ${precoMedioEstoque ? reaisCurto(precoMedioEstoque) : "—"}`),
       ]);
 
       const alternar = el("div", { class: "alternar", role: "group", "aria-label": "Medida do gráfico" }, [
@@ -313,6 +343,7 @@
       const grafMes = el("div", { class: "grafico" });
       const grafMarca = el("div", { class: "grafico" });
       const grafFaixa = el("div", { class: "grafico" });
+      const grafOrigem = el("div", { class: "grafico" });
 
       const tabelaMes = el("details", { class: "ver-tabela" }, [
         el("summary", { texto: "Ver por mês em tabela" }),
@@ -321,7 +352,14 @@
           [1, 2, 3]),
       ]);
 
-      const ultimas = vendidos.slice(0, 15).map((v) => [dataBR(v.vendido_em), titulo(v), ano(v), v.preco ? reais(v.preco) : "—", plural(dias(v.criado_em, v.vendido_em), "dia", "dias")]);
+      const ultimas = vendidos.slice(0, 15).map((v) => [
+        dataBR(v.vendido_em), titulo(v), ano(v),
+        v.preco ? reais(v.preco) : "—",
+        v.preco_venda ? reais(v.preco_venda) : "—",
+        v.preco_compra && valorVenda(v) ? reais(margem(v)) : "—",
+        v.origem_venda || "—",
+        plural(dias(v.criado_em, v.vendido_em), "dia", "dias"),
+      ]);
 
       alvo.replaceChildren(
         ...(exemplo ? [el("p", { class: "demo-aviso", texto: "Dados de exemplo: o histórico de vendas desta demonstração é fictício, gerado para mostrar o dashboard." })] : []),
@@ -340,9 +378,12 @@
             el("details", { class: "ver-tabela" }, [el("summary", { texto: "Ver em tabela" }),
               tabela(["Faixa", "Carros", "Faturamento"], porFaixa.map((f) => [f.rotulo, milhar(f.quantidade), reais(f.faturamento)]), [1, 2])])]),
         ]),
+        el("section", { class: "bloco" }, [el("h2", { texto: "De onde vêm os compradores" }), grafOrigem,
+          el("details", { class: "ver-tabela" }, [el("summary", { texto: "Ver em tabela" }),
+            tabela(["Origem", "Carros", "Faturamento"], porOrigem.map(([o, d]) => [o, milhar(d.quantidade), reais(d.faturamento)]), [1, 2])])]),
         el("section", { class: "bloco" }, [
           el("h2", { texto: "Últimas vendas" }),
-          ultimas.length ? tabela(["Data", "Veículo", "Ano", "Preço", "Em estoque"], ultimas, [3, 4])
+          ultimas.length ? tabela(["Data", "Veículo", "Ano", "Anunciado", "Vendido por", "Margem", "Origem", "Em estoque"], ultimas, [3, 4, 5, 7])
             : el("p", { class: "apagado", texto: "Nenhuma venda no período. Quando um carro é marcado como vendido, ele entra aqui." }),
         ]),
       );
@@ -362,6 +403,10 @@
           rotulo: f.rotulo.replace(" mil", "").replace("Acima de ", "> ").replace("Até ", "< "),
           valor: f.quantidade,
           linhas: [[plural(f.quantidade, "carro", "carros"), f.rotulo], [reais(f.faturamento), "faturamento"]],
+        })), milhar);
+        barras(grafOrigem, porOrigem.map(([o, d]) => ({
+          rotulo: o, valor: d.quantidade,
+          linhas: [[plural(d.quantidade, "carro", "carros"), o], [reais(d.faturamento), "faturamento"]],
         })), milhar);
       };
       pintar();

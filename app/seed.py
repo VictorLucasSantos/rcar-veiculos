@@ -17,7 +17,15 @@ from app.models import Usuario
 from app.servicos import gerar_hash
 
 # Colunas acrescentadas depois da primeira versão: create_all não altera tabela que já existe.
-COLUNAS_NOVAS = {"foto": {"credito": "VARCHAR(300) NOT NULL DEFAULT ''", "fonte": "VARCHAR(300) NOT NULL DEFAULT ''"}}
+COLUNAS_NOVAS = {
+    "foto": {"credito": "VARCHAR(300) NOT NULL DEFAULT ''", "fonte": "VARCHAR(300) NOT NULL DEFAULT ''"},
+    "veiculo": {
+        "preco_anterior": "INTEGER",
+        "preco_compra": "INTEGER",
+        "preco_venda": "INTEGER",
+        "origem_venda": "VARCHAR(30) NOT NULL DEFAULT ''",
+    },
+}
 
 
 def criar_tabelas() -> None:

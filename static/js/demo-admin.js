@@ -60,8 +60,22 @@
     return valor;
   }
 
-  // Mesma validação de _aplicar_dados() em app/rotas_admin.py.
-  function aplicarFormulario(v, form) {
+  // Mesma regra de definir_preco() em app/servicos.py. Devolve true quando o "De" foi preenchido sozinho.
+  function definirPreco(v, novo, de, existente) {
+    if (de != null) {
+      if (novo == null || de <= novo) throw new Error("O preço “De” precisa ser maior que o preço atual.");
+      v.preco = novo;
+      v.preco_anterior = de;
+      return false;
+    }
+    const automatico = existente && v.preco_anterior == null && v.preco != null && novo != null && novo < v.preco;
+    v.preco_anterior = automatico ? v.preco : null;
+    v.preco = novo;
+    return automatico;
+  }
+
+  // Mesma validação de _aplicar_dados() em app/rotas_admin.py. Devolve true quando o "De" foi automático.
+  function aplicarFormulario(v, form, existente) {
     const campo = (nome) => String(form.elements[nome]?.value ?? "").trim();
     const marca = campo("marca");
     const modelo = campo("modelo");
@@ -77,8 +91,17 @@
     if (anoModelo < fabricacao || anoModelo > fabricacao + 1) {
       throw new Error("O ano do modelo deve ser igual ao de fabricação ou o seguinte.");
     }
+    const origem = campo("origem_venda");
+    if (origem && !LISTAS.origens.includes(origem)) throw new Error("Escolha de onde veio o comprador.");
     const preco = lerCentavos(campo("preco"));
+    const de = lerCentavos(campo("preco_anterior"));
+    const compra = lerCentavos(campo("preco_compra"));
+    const venda = lerCentavos(campo("preco_venda"));
+    const automatico = definirPreco(v, preco, de, existente);
     Object.assign(v, {
+      preco_compra: compra,
+      preco_venda: venda,
+      origem_venda: origem,
       marca: marca.slice(0, 40),
       modelo: modelo.slice(0, 60),
       versao: campo("versao").slice(0, 80),
@@ -88,13 +111,13 @@
       cambio: campo("cambio"),
       combustivel: campo("combustivel"),
       cor: campo("cor").slice(0, 30),
-      preco,
       descricao: campo("descricao"),
       opcionais: campo("opcionais").split("\n").map((l) => l.trim()).filter(Boolean).join("\n"),
       ativo: form.elements.ativo.checked,
       destaque: form.elements.destaque.checked,
     });
     mudarSituacao(v, campo("situacao"));
+    return automatico;
   }
 
   function reduzirFoto(arquivo) {
@@ -152,7 +175,7 @@
             ${!v.ativo ? '<span class="etiqueta">fora do site</span>' : v.destaque ? '<span class="etiqueta destaque">destaque</span>' : ""}</td>
           <td>${D.ano(v)}</td>
           <td class="dir">${D.km(v.km) || "—"}</td>
-          <td class="dir">${D.reais(v.preco) || "Consulte"}</td>
+          <td class="dir">${D.reais(v.preco) || "Consulte"}${D.desconto(v) ? `<br><small class="etiqueta destaque">−${D.descontoPct(v)}%</small>` : ""}</td>
           <td>${seletorSituacao(v)}</td>
         </tr>`).join("")}</tbody>
     </table></div>`;
@@ -172,6 +195,7 @@
 ${avisoHTML()}
 ${semFoto.length ? `<p class="aviso atencao">${semFoto.length} veículo${semFoto.length === 1 ? "" : "s"} no site sem foto:
   ${semFoto.slice(0, 8).map((v) => `<a href="#/veiculos/${v.id}">${esc(D.titulo(v))}</a>`).join(", ")}${semFoto.length > 8 ? " e outros" : ""}.</p>` : ""}
+${noSite.filter(fichaIncompleta).length ? `<p class="aviso atencao">${noSite.filter(fichaIncompleta).length} carros no site sem km, câmbio ou combustível. <a href="#/fichas">Completar fichas</a></p>` : ""}
 <div class="resumo">
   <a href="#/veiculos?situacao=disponivel"><span>Disponíveis</span><b>${total.disponivel}</b></a>
   <a href="#/veiculos?situacao=reservado"><span>Reservados</span><b>${total.reservado}</b></a>
@@ -198,7 +222,7 @@ ${semFoto.length ? `<p class="aviso atencao">${semFoto.length} veículo${semFoto
       `<a href="#/veiculos?situacao=${chave}${busca}" ${situacao === chave ? 'aria-current="true"' : ""}>${rotulo} <span>${n}</span></a>`;
     return `
 <div class="painel-cabeca"><h1>Veículos</h1>
-  <div class="acoes"><a class="btn red sm" href="#/veiculos/novo">+ Cadastrar veículo</a></div></div>
+  <div class="acoes"><a class="btn line sm" href="#/fichas">Completar fichas</a><a class="btn red sm" href="#/veiculos/novo">+ Cadastrar veículo</a></div></div>
 ${avisoHTML()}
 <section class="bloco">
   <nav class="filtro-situacao" aria-label="Filtrar por situação">
@@ -211,6 +235,48 @@ ${avisoHTML()}
     <button class="btn line sm" type="submit">Buscar</button>
   </form>
   ${lista.length ? tabela(lista) : `<p class="apagado">${q ? `Nenhum veículo com “${esc(q)}”.` : situacao ? `Nenhum veículo ${D.SITUACOES[situacao].toLowerCase()}.` : "Nenhum veículo cadastrado ainda."}</p>`}
+</section>`;
+  }
+
+  const fichaIncompleta = (v) => v.km == null || !v.cambio || !v.combustivel;
+
+  // Mesma tabela de app/templates/admin/fichas.html.
+  function telaFichas(parametros) {
+    const todas = parametros.get("todas") === "1";
+    const estoque = dados.veiculos
+      .filter((v) => v.situacao !== "vendido")
+      .sort((a, b) => `${a.marca} ${a.modelo}`.localeCompare(`${b.marca} ${b.modelo}`) || a.ano_modelo - b.ano_modelo);
+    const incompletos = estoque.filter(fichaIncompleta);
+    const lista = todas ? estoque : incompletos;
+    const opcoes = (valores, atual) => '<option value="">—</option>' + valores.map((o) => `<option ${o === atual ? "selected" : ""}>${esc(o)}</option>`).join("");
+    return `
+<div class="painel-cabeca"><h1>Completar fichas</h1>
+  <div class="acoes"><a class="btn line sm" href="#/veiculos">Voltar</a></div></div>
+${avisoHTML()}
+<section class="bloco">
+  <nav class="filtro-situacao" aria-label="Quais carros">
+    <a href="#/fichas" ${todas ? "" : 'aria-current="true"'}>Incompletas <span>${incompletos.length}</span></a>
+    <a href="#/fichas?todas=1" ${todas ? 'aria-current="true"' : ""}>Todos no estoque</a>
+  </nav>
+  <p class="apagado">Ficha incompleta é a que está sem km, câmbio ou combustível. Preencha o que souber e salve tudo de uma vez; o que ficar vazio continua vazio. O preço de compra só aparece no painel.</p>
+  ${lista.length ? `<form data-fichas>
+    <div class="tabela-rolagem"><table class="tabela fichas">
+      <thead><tr><th>Veículo</th><th>Versão</th><th>Km</th><th>Câmbio</th><th>Combustível</th><th>Cor</th><th>Preço de compra</th></tr></thead>
+      <tbody>${lista.map((v) => {
+        const rotulo = esc(`${D.nome(v)} ${D.ano(v)}`);
+        return `<tr data-ficha="${v.id}">
+          <td><a href="#/veiculos/${v.id}">${esc(D.nome(v))}</a><br><small class="apagado">${D.ano(v)} · ${D.reais(v.preco) || "Consulte"}</small></td>
+          <td><input class="entrada" name="versao" value="${esc(v.versao)}" maxlength="80" placeholder="1.0 LT" aria-label="Versão de ${rotulo}"></td>
+          <td><input class="entrada" name="km" value="${v.km != null ? D.milhar(v.km) : ""}" inputmode="numeric" placeholder="45.000" aria-label="Km de ${rotulo}"></td>
+          <td><select class="entrada" name="cambio" aria-label="Câmbio de ${rotulo}">${opcoes(LISTAS.cambios, v.cambio)}</select></td>
+          <td><select class="entrada" name="combustivel" aria-label="Combustível de ${rotulo}">${opcoes(LISTAS.combustiveis, v.combustivel)}</select></td>
+          <td><input class="entrada" name="cor" value="${esc(v.cor)}" maxlength="30" placeholder="Branco" aria-label="Cor de ${rotulo}"></td>
+          <td><input class="entrada" name="preco_compra" value="${v.preco_compra ? D.reais(v.preco_compra).slice(3) : ""}" inputmode="decimal" placeholder="75.000" aria-label="Preço de compra de ${rotulo}"></td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table></div>
+    <p class="rodape-form"><button class="btn red sm" type="submit">Salvar todas</button></p>
+  </form>` : '<p class="apagado">Todas as fichas do estoque estão completas.</p>'}
 </section>`;
   }
 
@@ -251,6 +317,9 @@ ${v && !D.noSite(v) ? `<p class="aviso atencao">Este veículo não aparece no si
       <input class="entrada" name="km" inputmode="numeric" value="${val("km", v && v.km != null ? D.milhar(v.km) : "")}" placeholder="45.000"></label>
     <label class="campo"><span>Preço <small>(vazio = “Consulte o preço”)</small></span>
       <input class="entrada" name="preco" inputmode="decimal" value="${val("preco", v?.preco ? D.reais(v.preco).slice(3) : "")}" placeholder="89.900"></label>
+    <label class="campo"><span>Preço “De” <small>(oferta: o site mostra “De … por …”)</small></span>
+      <input class="entrada" name="preco_anterior" inputmode="decimal" value="${val("preco_anterior", v?.preco_anterior ? D.reais(v.preco_anterior).slice(3) : "")}" placeholder="${v ? "Preenchido sozinho quando o preço baixa" : "97.000"}">
+      <small>Use só um preço que o carro teve de verdade. Ao baixar o preço, o antigo entra aqui sozinho.</small></label>
     <label class="campo"><span>Câmbio</span>
       <select class="entrada" name="cambio">${opcoes(LISTAS.cambios, atual("cambio", v?.cambio))}</select></label>
     <label class="campo"><span>Combustível</span>
@@ -270,6 +339,18 @@ ${v && !D.noSite(v) ? `<p class="aviso atencao">Este veículo não aparece no si
       <textarea class="entrada" name="opcionais" rows="7" placeholder="Ar-condicionado&#10;Direção elétrica&#10;Central multimídia&#10;Câmera de ré">${val("opcionais", v?.opcionais)}</textarea></label>
     <label class="campo"><span>Descrição</span>
       <textarea class="entrada" name="descricao" rows="7" placeholder="Único dono, revisões na concessionária, pneus novos…">${val("descricao", v?.descricao)}</textarea></label>
+    <div class="subtitulo-form inteiro" id="venda">
+      <h3>Custo e venda</h3>
+      <p>Só aparece aqui no painel. Alimenta a margem e o dashboard de vendas.</p>
+    </div>
+    <label class="campo"><span>Preço de compra <small>(quanto a loja pagou)</small></span>
+      <input class="entrada" name="preco_compra" inputmode="decimal" value="${val("preco_compra", v?.preco_compra ? D.reais(v.preco_compra).slice(3) : "")}" placeholder="75.000"></label>
+    <label class="campo"><span>Valor da venda <small>(fechado com o cliente)</small></span>
+      <input class="entrada" name="preco_venda" inputmode="decimal" value="${val("preco_venda", v?.preco_venda ? D.reais(v.preco_venda).slice(3) : "")}" placeholder="${v?.preco ? D.reais(v.preco).slice(3) : "86.000"}">
+      ${v?.preco_venda && v?.preco_compra ? `<small>Margem: ${D.reais(v.preco_venda - v.preco_compra)} (${((100 * (v.preco_venda - v.preco_compra)) / v.preco_venda).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da venda)</small>` : ""}</label>
+    <label class="campo"><span>De onde veio o comprador</span>
+      <select class="entrada" name="origem_venda"><option value="">Não informar</option>${LISTAS.origens.map((o) =>
+        `<option ${atual("origem_venda", v?.origem_venda) === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select></label>
   </div>
   <p class="rodape-form"><button class="btn red sm" type="submit">${v ? "Salvar dados" : "Cadastrar e enviar fotos"}</button></p>
 </form>
@@ -310,7 +391,10 @@ ${v ? `
     const { partes, parametros } = rota();
     veiculoAberto = null;
     let secao = "inicio";
-    if (partes[0] === "vendas") {
+    if (partes[0] === "fichas") {
+      secao = "veiculos";
+      app.innerHTML = telaFichas(parametros);
+    } else if (partes[0] === "vendas") {
       secao = "vendas";
       app.innerHTML = '<div class="painel-cabeca"><h1>Vendas</h1></div><div class="dashboard" data-dashboard></div>';
       window.RcarVendas.montar(app.querySelector("[data-dashboard]"), dados.veiculos);
@@ -342,7 +426,14 @@ ${v ? `
     if (!id) return;
     const v = veiculo(Number(id));
     mudarSituacao(v, e.target.value);
-    if (salvar()) aviso = `${D.titulo(v)}: ${D.SITUACOES[v.situacao].toLowerCase()}.`;
+    if (!salvar()) return desenhar();
+    if (v.situacao === "vendido" && v.preco_venda == null) {
+      // Como no painel real: leva ao bloco da venda para registrar valor, custo e origem.
+      ir(`#/veiculos/${v.id}`, `${D.titulo(v)}: vendido. Informe o valor da venda, o custo e de onde veio o comprador.`);
+      requestAnimationFrame(() => document.getElementById("venda")?.scrollIntoView());
+      return;
+    }
+    aviso = `${D.titulo(v)}: ${D.SITUACOES[v.situacao].toLowerCase()}.`;
     desenhar();
   });
 
@@ -365,8 +456,10 @@ ${v ? `
         ? { id: Math.max(0, ...dados.veiculos.map((x) => x.id)) + 1, situacao: "disponivel", vendido_em: null, criado_em: agora(), fotos: [] }
         : veiculo(Number(form.dataset.veiculo));
       const copia = { ...v };
+      const precoAntes = v.preco;
+      let automatico;
       try {
-        aplicarFormulario(v, form);
+        automatico = aplicarFormulario(v, form, !novo);
       } catch (erro) {
         Object.assign(v, copia);
         const rascunho = Object.fromEntries(new FormData(form));
@@ -381,7 +474,32 @@ ${v ? `
       if (novo) {
         ir(`#/veiculos/${v.id}`, "Veículo cadastrado. Agora envie as fotos.");
         requestAnimationFrame(() => document.getElementById("fotos")?.scrollIntoView());
+      } else if (automatico) {
+        ir(`#/veiculos/${v.id}`, `Preço baixou: o site mostra “De ${D.reais(precoAntes)} por ${D.reais(v.preco)}”. Para não mostrar, apague o campo “De”.`);
       } else ir(`#/veiculos/${v.id}`, "Dados do veículo salvos.");
+      return;
+    }
+
+    if (form.matches("[data-fichas]")) {
+      for (const linha of form.querySelectorAll("[data-ficha]")) {
+        const v = veiculo(Number(linha.dataset.ficha));
+        const campo = (nome) => linha.querySelector(`[name="${nome}"]`).value.trim();
+        try {
+          Object.assign(v, {
+            versao: campo("versao").slice(0, 80),
+            km: lerInteiro(campo("km")),
+            cambio: LISTAS.cambios.includes(campo("cambio")) ? campo("cambio") : "",
+            combustivel: LISTAS.combustiveis.includes(campo("combustivel")) ? campo("combustivel") : "",
+            cor: campo("cor").slice(0, 30),
+            preco_compra: lerCentavos(campo("preco_compra")),
+          });
+        } catch (erro) {
+          aviso = `${D.titulo(v)}: ${erro.message}.`;
+          return desenhar();
+        }
+      }
+      if (salvar()) aviso = "Fichas atualizadas.";
+      desenhar();
       return;
     }
 

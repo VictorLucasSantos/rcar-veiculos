@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+{% block titulo %}Completar fichas{% endblock %}
+
+{% block conteudo %}
+<div class="painel-cabeca">
+  <h1>Completar fichas</h1>
+  <div class="acoes"><a class="btn line sm" href="/admin/veiculos">Voltar</a></div>
+</div>
+
+<section class="bloco">
+  <nav class="filtro-situacao" aria-label="Quais carros">
+    <a href="/admin/fichas" {% if not todas %}aria-current="true"{% endif %}>Incompletas <span>{{ total_incompletos }}</span></a>
+    <a href="/admin/fichas?todas=1" {% if todas %}aria-current="true"{% endif %}>Todos no estoque</a>
+  </nav>
+  <p class="apagado">Ficha incompleta é a que está sem km, câmbio ou combustível. Preencha o que souber e salve tudo de uma vez; o que ficar vazio continua vazio. O preço de compra só aparece no painel.</p>
+  {% if veiculos %}
+  <form method="post" action="/admin/fichas">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if todas %}<input type="hidden" name="todas" value="1">{% endif %}
+    <div class="tabela-rolagem">
+      <table class="tabela fichas">
+        <thead><tr><th>Veículo</th><th>Versão</th><th>Km</th><th>Câmbio</th><th>Combustível</th><th>Cor</th><th>Preço de compra</th></tr></thead>
+        <tbody>
+        {% for v in veiculos %}
+          <tr>
+            <td><input type="hidden" name="id" value="{{ v.id }}"><a href="/admin/veiculos/{{ v.id }}">{{ v.nome }}</a><br><small class="apagado">{{ v.ano }} · {{ (v.preco | reais) or 'Consulte' }}</small></td>
+            <td><input class="entrada" name="versao-{{ v.id }}" value="{{ v.versao }}" maxlength="80" placeholder="1.0 LT" aria-label="Versão de {{ v.nome }} {{ v.ano }}"></td>
+            <td><input class="entrada" name="km-{{ v.id }}" value="{{ v.km | milhar if v.km is not none else '' }}" inputmode="numeric" placeholder="45.000" aria-label="Km de {{ v.nome }} {{ v.ano }}"></td>
+            <td><select class="entrada" name="cambio-{{ v.id }}" aria-label="Câmbio de {{ v.nome }} {{ v.ano }}">
+              <option value="">—</option>{% for c in CAMBIOS %}<option {% if v.cambio == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></td>
+            <td><select class="entrada" name="combustivel-{{ v.id }}" aria-label="Combustível de {{ v.nome }} {{ v.ano }}">
+              <option value="">—</option>{% for c in COMBUSTIVEIS %}<option {% if v.combustivel == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></td>
+            <td><input class="entrada" name="cor-{{ v.id }}" value="{{ v.cor }}" maxlength="30" placeholder="Branco" aria-label="Cor de {{ v.nome }} {{ v.ano }}"></td>
+            <td><input class="entrada" name="preco_compra-{{ v.id }}" value="{{ (v.preco_compra | reais)[3:] if v.preco_compra else '' }}" inputmode="decimal" placeholder="75.000" aria-label="Preço de compra de {{ v.nome }} {{ v.ano }}"></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="rodape-form"><button class="btn red sm" type="submit">Salvar todas</button></p>
+  </form>
+  {% else %}
+  <p class="apagado">Todas as fichas do estoque estão completas.</p>
+  {% endif %}
+</section>
+{% endblock %}

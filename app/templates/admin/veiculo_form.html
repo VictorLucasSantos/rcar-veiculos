@@ -35,6 +35,9 @@
       <input class="entrada" name="km" inputmode="numeric" value="{{ valor('km', v.km | milhar if v and v.km is not none else '') }}" placeholder="45.000"></label>
     <label class="campo"><span>Preço <small>(vazio = “Consulte o preço”)</small></span>
       <input class="entrada" name="preco" inputmode="decimal" value="{{ valor('preco', (v.preco | reais)[3:] if v and v.preco else '') }}" placeholder="89.900"></label>
+    <label class="campo"><span>Preço “De” <small>(oferta: o site mostra “De … por …”)</small></span>
+      <input class="entrada" name="preco_anterior" inputmode="decimal" value="{{ valor('preco_anterior', (v.preco_anterior | reais)[3:] if v and v.preco_anterior else '') }}" placeholder="{{ 'Preenchido sozinho quando o preço baixa' if v else '97.000' }}">
+      <small>Use só um preço que o carro teve de verdade. Ao baixar o preço, o antigo entra aqui sozinho.</small></label>
     <label class="campo"><span>Câmbio</span>
       <select class="entrada" name="cambio">
         {% set atual = valor('cambio', v.cambio if v else '') %}
@@ -64,6 +67,21 @@
       <textarea class="entrada" name="opcionais" rows="7" placeholder="Ar-condicionado&#10;Direção elétrica&#10;Central multimídia&#10;Câmera de ré">{{ valor('opcionais', v.opcionais if v else '') }}</textarea></label>
     <label class="campo"><span>Descrição</span>
       <textarea class="entrada" name="descricao" rows="7" placeholder="Único dono, revisões na concessionária, pneus novos…">{{ valor('descricao', v.descricao if v else '') }}</textarea></label>
+    <div class="subtitulo-form inteiro" id="venda">
+      <h3>Custo e venda</h3>
+      <p>Só aparece aqui no painel. Alimenta a margem e o dashboard de vendas.</p>
+    </div>
+    <label class="campo"><span>Preço de compra <small>(quanto a loja pagou)</small></span>
+      <input class="entrada" name="preco_compra" inputmode="decimal" value="{{ valor('preco_compra', (v.preco_compra | reais)[3:] if v and v.preco_compra else '') }}" placeholder="75.000"></label>
+    <label class="campo"><span>Valor da venda <small>(fechado com o cliente)</small></span>
+      <input class="entrada" name="preco_venda" inputmode="decimal" value="{{ valor('preco_venda', (v.preco_venda | reais)[3:] if v and v.preco_venda else '') }}" placeholder="{{ (v.preco | reais)[3:] if v and v.preco else '86.000' }}">
+      {% if v and v.preco_venda and v.preco_compra %}<small>Margem: {{ (v.preco_venda - v.preco_compra) | reais }} ({{ ((v.preco_venda - v.preco_compra) * 100 / v.preco_venda) | round(1) }}% da venda)</small>{% endif %}</label>
+    <label class="campo"><span>De onde veio o comprador</span>
+      <select class="entrada" name="origem_venda">
+        {% set atual = valor('origem_venda', v.origem_venda if v else '') %}
+        <option value="">Não informar</option>
+        {% for o in ORIGENS_VENDA %}<option {% if atual == o %}selected{% endif %}>{{ o }}</option>{% endfor %}
+      </select></label>
   </div>
   <p class="rodape-form"><button class="btn red sm" type="submit">{{ 'Salvar dados' if v else 'Cadastrar e enviar fotos' }}</button></p>
 </form>

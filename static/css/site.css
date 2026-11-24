@@ -100,6 +100,14 @@ section.block{padding-block:84px}
 .ficha-curta{display:flex;flex-wrap:wrap;gap:4px 14px;margin:4px 0 0;padding:0;list-style:none;font-size:.9rem;color:var(--apagado);font-variant-numeric:tabular-nums}
 .carro .preco{margin-top:8px;font:italic 800 1.6rem/1 var(--display);font-variant-numeric:tabular-nums}
 .preco .consulte{font-size:1.1rem;color:var(--lustre)}
+/* oferta: "De" riscado, preço atual e etiqueta da economia */
+.preco .de{display:block;font:500 .85rem/1.3 var(--body);color:var(--apagado);margin-bottom:4px}
+.preco .de s{text-decoration-thickness:1.5px}
+.preco .por{display:block}
+.preco .economia{display:inline-block;margin-top:8px;font:700 .8rem/1 var(--body);letter-spacing:.01em;color:#fff;background:var(--vermelho);padding:5px 8px;border-radius:4px}
+.lado .preco .de{font-size:1rem}
+.lado .preco .economia{font-size:.9rem}
+.selo.oferta{background:var(--vermelho);color:#fff}
 .vazio-estoque{border:1px dashed #4a4e58;border-radius:10px;padding:28px;display:grid;gap:14px;justify-items:start;color:var(--apagado)}
 .vazio-estoque p{margin:0;max-width:56ch}
 

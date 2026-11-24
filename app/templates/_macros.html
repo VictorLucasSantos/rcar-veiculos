@@ -1,9 +1,15 @@
+{# Oferta: "De" riscado em cima, preço atual grande e a economia em etiqueta. Mesmo HTML de precoHTML() em static/js/demo.js. #}
 {% macro preco(veiculo) -%}
-{% if veiculo.preco %}{{ veiculo.preco | reais }}{% else %}<span class="consulte">Consulte o preço</span>{% endif %}
+{% if not veiculo.preco %}<span class="consulte">Consulte o preço</span>
+{% elif veiculo.desconto %}<span class="de">De <s>{{ veiculo.preco_anterior | reais }}</s> por</span>
+<span class="por">{{ veiculo.preco | reais }}</span>
+<span class="economia">{{ veiculo.desconto | reais }} a menos</span>
+{% else %}{{ veiculo.preco | reais }}{% endif %}
 {%- endmacro %}
 
 {% macro selo(veiculo) -%}
 {% if veiculo.situacao == 'reservado' %}<span class="selo reservado">Reservado</span>
+{% elif veiculo.desconto %}<span class="selo oferta">Baixou {{ veiculo.desconto_pct }}%</span>
 {% elif veiculo.destaque %}<span class="selo destaque">Destaque</span>{% endif %}
 {%- endmacro %}
 
@@ -22,7 +28,7 @@
 <a class="carro" href="/veiculo/{{ veiculo.slug }}"
    data-carro data-marca="{{ veiculo.marca }}" data-cambio="{{ veiculo.cambio }}"
    data-preco="{{ veiculo.preco or '' }}" data-ano="{{ veiculo.ano_modelo }}" data-km="{{ veiculo.km if veiculo.km is not none else '' }}"
-   data-ordem="{{ ordem }}"
+   data-ordem="{{ ordem }}" data-desconto="{{ veiculo.desconto }}"
    data-busca="{{ (veiculo.titulo ~ ' ' ~ veiculo.cor ~ ' ' ~ veiculo.ano) | lower }}">
   <div class="foto">
     {% if veiculo.foto_capa %}

@@ -154,6 +154,7 @@
     const numero = (c, chave, vazio) => (c.dataset[chave] === "" ? vazio : Number(c.dataset[chave]));
     const ordens = {
       "": (a, b) => numero(a, "ordem", 0) - numero(b, "ordem", 0),
+      "maior-desconto": (a, b) => numero(b, "desconto", 0) - numero(a, "desconto", 0) || numero(a, "ordem", 0) - numero(b, "ordem", 0),
       "menor-preco": (a, b) => numero(a, "preco", Infinity) - numero(b, "preco", Infinity),
       "maior-preco": (a, b) => numero(b, "preco", -Infinity) - numero(a, "preco", -Infinity),
       "mais-novo": (a, b) => numero(b, "ano", 0) - numero(a, "ano", 0),

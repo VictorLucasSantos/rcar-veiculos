@@ -50,6 +50,9 @@ textarea.entrada{resize:vertical;line-height:1.5}
 .form-grade{display:grid;gap:18px;grid-template-columns:repeat(2,minmax(0,1fr))}
 .form-grade .inteiro{grid-column:1/-1}
 @media (max-width:700px){.form-grade{grid-template-columns:1fr}}
+.subtitulo-form{border-top:1px solid var(--linha);padding-top:18px;margin-top:6px}
+.subtitulo-form h3{font-size:1.15rem;font-weight:700}
+.subtitulo-form p{margin:4px 0 0;color:var(--apagado);font-size:.9rem}
 .marcar{display:flex;gap:10px;align-items:center;min-height:40px;cursor:pointer}
 .marcar input{width:1.2rem;height:1.2rem;accent-color:var(--vermelho)}
 
@@ -72,6 +75,9 @@ textarea.entrada{resize:vertical;line-height:1.5}
 .situacao-reservado{border-color:#8a6a1d;color:var(--lustre)}
 .situacao-vendido{color:var(--apagado)}
 
+.tabela.fichas td{padding:6px}
+.tabela.fichas .entrada{min-height:38px;padding:6px 8px;font-size:.92rem;min-width:7rem}
+.tabela.fichas td:first-child{min-width:10rem}
 .filtro-situacao{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .filtro-situacao a{display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid #4a4e58;text-decoration:none;font-weight:600;font-size:.9rem}
 .filtro-situacao a span{color:var(--apagado);font-weight:500}
@@ -98,7 +104,7 @@ textarea.entrada{resize:vertical;line-height:1.5}
 .dash-filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:18px}
 .dash-filtros label{display:grid;gap:4px;font-size:.85rem;color:var(--apagado)}
 .dash-filtros select{min-width:12rem}
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:22px}
 .kpi{background:var(--grafite);border:1px solid var(--linha);border-radius:10px;padding:16px 18px;display:grid;gap:4px;align-content:start;min-width:0}
 .kpi span{color:var(--apagado);font-size:.9rem}
 .kpi b{font:600 1.6rem/1.1 var(--body);letter-spacing:-.01em}

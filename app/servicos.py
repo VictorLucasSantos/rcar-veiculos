@@ -152,9 +152,36 @@ def mudar_situacao(veiculo: Veiculo, nova: str) -> None:
     veiculo.situacao = nova
 
 
-def veiculo_para_json(v: Veiculo) -> dict:
-    """Dados do veículo para o JavaScript (dashboard de vendas e demonstração do painel)."""
-    return {
+def definir_preco(veiculo: Veiculo, novo: int | None, de: int | None) -> bool:
+    """Grava o preço e o preço "De". Devolve True quando o "De" foi preenchido sozinho.
+
+    - "De" informado precisa ser maior que o preço novo.
+    - Primeira baixa de preço sem "De" informado: o preço antigo vira o "De" (é um preço que o carro
+      teve de verdade). Se a pessoa apagar o "De" depois, ele não volta sozinho.
+    - Preço que sobe até o "De" ou passa dele encerra a oferta."""
+    if de is not None:
+        if novo is None or de <= novo:
+            raise ValueError("O preço “De” precisa ser maior que o preço atual.")
+        veiculo.preco, veiculo.preco_anterior = novo, de
+        return False
+    automatico = (
+        veiculo.id is not None
+        and veiculo.preco_anterior is None
+        and veiculo.preco is not None
+        and novo is not None
+        and novo < veiculo.preco
+    )
+    veiculo.preco_anterior = veiculo.preco if automatico else None
+    veiculo.preco = novo
+    return automatico
+
+
+def veiculo_para_json(v: Veiculo, privado: bool = False) -> dict:
+    """Dados do veículo para o JavaScript (dashboard de vendas e demonstração do painel).
+
+    `privado` inclui custo, valor de venda e origem do comprador: só para o painel com login,
+    nunca para a cópia pública do GitHub Pages."""
+    dados = {
         "id": v.id,
         "marca": v.marca,
         "modelo": v.modelo,
@@ -166,6 +193,7 @@ def veiculo_para_json(v: Veiculo) -> dict:
         "combustivel": v.combustivel,
         "cor": v.cor,
         "preco": v.preco,
+        "preco_anterior": v.preco_anterior if v.desconto else None,
         "descricao": v.descricao,
         "opcionais": v.opcionais,
         "situacao": v.situacao,
@@ -176,7 +204,13 @@ def veiculo_para_json(v: Veiculo) -> dict:
         "fotos": [f"/media/{f.arquivo}" for f in v.fotos],
         # Fotos ilustrativas (não são do carro à venda) levam crédito do autor e da licença.
         "creditos": {f"/media/{f.arquivo}": {"texto": f.credito, "fonte": f.fonte} for f in v.fotos if f.credito},
+        "preco_compra": None,
+        "preco_venda": None,
+        "origem_venda": "",
     }
+    if privado:
+        dados.update(preco_compra=v.preco_compra, preco_venda=v.preco_venda, origem_venda=v.origem_venda)
+    return dados
 
 
 def mensagem_interesse(veiculo: Veiculo, loja: dict[str, str], url: str = "") -> str:

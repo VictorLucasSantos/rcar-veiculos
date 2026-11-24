@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import obter_sessao
-from app.models import CAMBIOS, COMBUSTIVEIS, MARCAS, Veiculo
+from app.models import CAMBIOS, COMBUSTIVEIS, MARCAS, ORIGENS_VENDA, Veiculo
 from app.servicos import ler_config, link_whatsapp, mensagem_interesse, veiculo_para_json
 from app.web import eh_exportacao, render, url_publica
 
@@ -78,7 +78,7 @@ def _so_na_exportacao(request: Request) -> None:
 @roteador.get("/demo/admin")
 def demo_admin(request: Request, sessao: Session = Depends(obter_sessao)):
     _so_na_exportacao(request)
-    listas = {"marcas": MARCAS, "cambios": CAMBIOS, "combustiveis": COMBUSTIVEIS}
+    listas = {"marcas": MARCAS, "cambios": CAMBIOS, "combustiveis": COMBUSTIVEIS, "origens": ORIGENS_VENDA}
     return render(request, sessao, "demo/admin.html", {"listas": listas})
 
 
@@ -124,12 +124,18 @@ def vendas_de_exemplo(veiculos: list[dict], meses: int = 12) -> list[dict]:
             base = sorteio.choice(modelos)
             vendido_em = inicio.replace(day=sorteio.randint(1, ultimo_dia), hour=sorteio.randint(9, 18))
             ano = base["ano_modelo"] - sorteio.choice([0, 0, 1, 2])
+            anuncio = round(base["preco"] * sorteio.uniform(0.88, 1.08) / 50000) * 50000
+            venda = round(anuncio * sorteio.uniform(0.93, 1.0) / 50000) * 50000
             vendas.append({
                 **base,
                 "id": proximo_id,
                 "ano_fabricacao": ano,
                 "ano_modelo": ano,
-                "preco": round(base["preco"] * sorteio.uniform(0.88, 1.08) / 50000) * 50000,
+                "preco": anuncio,
+                "preco_anterior": None,
+                "preco_venda": venda,
+                "preco_compra": round(venda * sorteio.uniform(0.80, 0.92) / 50000) * 50000,
+                "origem_venda": sorteio.choices(ORIGENS_VENDA, weights=[38, 22, 14, 6, 10, 8, 2])[0],
                 "situacao": "vendido",
                 "destaque": False,
                 "criado_em": (vendido_em - timedelta(days=sorteio.randint(5, 75))).isoformat(timespec="seconds"),

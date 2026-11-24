@@ -11,6 +11,9 @@
 <p class="aviso atencao">{{ sem_foto | length }} veículo{{ 's' if sem_foto | length != 1 }} no site sem foto:
   {% for v in sem_foto %}<a href="/admin/veiculos/{{ v.id }}#fotos">{{ v.titulo }}</a>{{ ', ' if not loop.last }}{% endfor %}.</p>
 {% endif %}
+{% if fichas_incompletas %}
+<p class="aviso atencao">{{ fichas_incompletas }} carro{{ 's' if fichas_incompletas != 1 }} no site sem km, câmbio ou combustível. <a href="/admin/fichas">Completar fichas</a></p>
+{% endif %}
 
 <div class="resumo">
   <a href="/admin/veiculos?situacao=disponivel"><span>Disponíveis</span><b>{{ contagem.get('disponivel', 0) }}</b></a>

@@ -12,16 +12,18 @@ from sqlalchemy.orm import Session, selectinload
 from starlette.datastructures import FormData, UploadFile
 
 from app.db import obter_sessao
-from app.models import CAMBIOS, COMBUSTIVEIS, MARCAS, SITUACOES, Foto, Usuario, Veiculo
+from app.models import CAMBIOS, COMBUSTIVEIS, MARCAS, ORIGENS_VENDA, SITUACOES, Foto, Usuario, Veiculo
 from app.servicos import (
     ROTULOS_CONFIG,
     apagar_arquivo_foto,
     autenticar,
     conferir_senha,
+    definir_preco,
     gerar_hash,
     ler_centavos,
     ler_inteiro,
     mudar_situacao,
+    reais,
     salvar_config,
     salvar_foto,
     slug_unico,
@@ -146,6 +148,7 @@ def painel(request: Request, usuario: Usuario = Depends(usuario_logado), sessao:
             "vendidos_mes": vendidos_mes,
             "no_site": no_site,
             "sem_foto": [v for v in no_site if not v.fotos],
+            "fichas_incompletas": sum(v.ficha_incompleta for v in no_site),
             "sem_preco": [v for v in no_site if v.preco is None],
         },
     )
@@ -186,6 +189,7 @@ def _contexto_form(usuario: Usuario, veiculo: Veiculo | None, erro: str | None =
         "MARCAS": MARCAS,
         "CAMBIOS": CAMBIOS,
         "COMBUSTIVEIS": COMBUSTIVEIS,
+        "ORIGENS_VENDA": ORIGENS_VENDA,
         "ano_atual": datetime.now().year,
     }
 
@@ -203,7 +207,8 @@ def _ler_ano(dados: FormData, campo: str, rotulo: str) -> int:
     return ano
 
 
-def _aplicar_dados(sessao: Session, veiculo: Veiculo, dados: FormData) -> None:
+def _aplicar_dados(sessao: Session, veiculo: Veiculo, dados: FormData) -> bool:
+    """Valida e grava o formulário. Devolve True quando o preço "De" foi preenchido sozinho."""
     marca = str(dados.get("marca", "")).strip()
     modelo = str(dados.get("modelo", "")).strip()
     if not marca or not modelo:
@@ -215,6 +220,13 @@ def _aplicar_dados(sessao: Session, veiculo: Veiculo, dados: FormData) -> None:
     situacao = str(dados.get("situacao", "disponivel"))
     if situacao not in SITUACOES:
         raise ValueError("Escolha a situação do veículo.")
+    origem = str(dados.get("origem_venda", "")).strip()
+    if origem and origem not in ORIGENS_VENDA:
+        raise ValueError("Escolha de onde veio o comprador.")
+    preco = ler_centavos(str(dados.get("preco", "")))
+    preco_de = ler_centavos(str(dados.get("preco_anterior", "")))
+    preco_compra = ler_centavos(str(dados.get("preco_compra", "")))
+    preco_venda = ler_centavos(str(dados.get("preco_venda", "")))
 
     veiculo.marca = marca[:40]
     veiculo.modelo = modelo[:60]
@@ -225,7 +237,10 @@ def _aplicar_dados(sessao: Session, veiculo: Veiculo, dados: FormData) -> None:
     veiculo.cambio = str(dados.get("cambio", "")).strip()[:20]
     veiculo.combustivel = str(dados.get("combustivel", "")).strip()[:20]
     veiculo.cor = str(dados.get("cor", "")).strip()[:30]
-    veiculo.preco = ler_centavos(str(dados.get("preco", "")))
+    automatico = definir_preco(veiculo, preco, preco_de)
+    veiculo.preco_compra = preco_compra
+    veiculo.preco_venda = preco_venda
+    veiculo.origem_venda = origem
     veiculo.descricao = str(dados.get("descricao", "")).strip()
     veiculo.opcionais = "\n".join(
         linha.strip() for linha in str(dados.get("opcionais", "")).splitlines() if linha.strip()
@@ -234,6 +249,7 @@ def _aplicar_dados(sessao: Session, veiculo: Veiculo, dados: FormData) -> None:
     veiculo.destaque = dados.get("destaque") == "on"
     veiculo.slug = slug_unico(sessao, f"{veiculo.titulo} {ano_modelo}", veiculo.id)
     mudar_situacao(veiculo, situacao)
+    return automatico
 
 
 @roteador.post("/veiculos/novo")
@@ -271,14 +287,19 @@ async def salvar_veiculo(
 ):
     dados = await formulario(request)
     veiculo = _carregar_veiculo(sessao, veiculo_id)
+    preco_antes = veiculo.preco
     try:
-        _aplicar_dados(sessao, veiculo, dados)
+        automatico = _aplicar_dados(sessao, veiculo, dados)
     except ValueError as erro:
         sessao.rollback()
         veiculo = _carregar_veiculo(sessao, veiculo_id)
         return render(request, sessao, "admin/veiculo_form.html", _contexto_form(usuario, veiculo, str(erro), dados), 422)
     sessao.commit()
-    avisar(request, "Dados do veículo salvos.")
+    if automatico:
+        avisar(request, f"Preço baixou: o site mostra “De {reais(preco_antes)} por {reais(veiculo.preco)}”. "
+                        "Para não mostrar, apague o campo “De”.")
+    else:
+        avisar(request, "Dados do veículo salvos.")
     return voltar(f"/admin/veiculos/{veiculo.id}")
 
 
@@ -295,6 +316,10 @@ async def situacao_veiculo(
     except ValueError as erro:
         raise HTTPException(400, str(erro)) from erro
     sessao.commit()
+    if nova == "vendido" and veiculo.preco_venda is None:
+        # Leva direto ao bloco da venda para registrar valor, custo e origem (alimenta o dashboard).
+        avisar(request, f"{veiculo.titulo}: vendido. Informe o valor da venda, o custo e de onde veio o comprador.")
+        return voltar(f"/admin/veiculos/{veiculo.id}#venda")
     avisar(request, f"{veiculo.titulo}: {SITUACOES[nova].lower()}.")
     destino = str(dados.get("voltar", ""))
     return voltar(destino if destino.startswith("/admin") else "/admin/veiculos")
@@ -365,6 +390,64 @@ async def apagar_veiculo(
     return voltar("/admin/veiculos")
 
 
+# ---------------------------------------------------------------- completar fichas
+
+
+@roteador.get("/fichas")
+def fichas(
+    request: Request, todas: int = 0, usuario: Usuario = Depends(usuario_logado), sessao: Session = Depends(obter_sessao)
+):
+    """Tabela para preencher de uma vez a ficha dos carros (importados só com marca, modelo, ano e preço)."""
+    veiculos = list(
+        sessao.scalars(select(Veiculo).where(Veiculo.situacao != "vendido").order_by(Veiculo.marca, Veiculo.modelo, Veiculo.ano_modelo))
+    )
+    incompletos = [v for v in veiculos if v.ficha_incompleta]
+    return render(
+        request,
+        sessao,
+        "admin/fichas.html",
+        {
+            "usuario": usuario,
+            "veiculos": veiculos if todas else incompletos,
+            "todas": bool(todas),
+            "total_incompletos": len(incompletos),
+            "CAMBIOS": CAMBIOS,
+            "COMBUSTIVEIS": COMBUSTIVEIS,
+        },
+    )
+
+
+@roteador.post("/fichas")
+async def salvar_fichas(request: Request, usuario: Usuario = Depends(usuario_logado), sessao: Session = Depends(obter_sessao)):
+    dados = await formulario(request)
+    ids = [int(i) for i in dados.getlist("id") if str(i).isdigit()]
+    alterados = 0
+    for veiculo in sessao.scalars(select(Veiculo).where(Veiculo.id.in_(ids))):
+        campo = lambda nome: str(dados.get(f"{nome}-{veiculo.id}", "")).strip()  # noqa: E731
+        try:
+            novo = {
+                "versao": campo("versao")[:80],
+                "km": ler_inteiro(campo("km")),
+                "cambio": campo("cambio") if campo("cambio") in CAMBIOS else "",
+                "combustivel": campo("combustivel") if campo("combustivel") in COMBUSTIVEIS else "",
+                "cor": campo("cor")[:30],
+                "preco_compra": ler_centavos(campo("preco_compra")),
+            }
+        except ValueError as erro:
+            avisar(request, f"{veiculo.titulo}: {erro}. Nada foi salvo.")
+            sessao.rollback()
+            return voltar("/admin/fichas")
+        if any(getattr(veiculo, chave) != valor for chave, valor in novo.items()):
+            # O endereço (slug) fica como está: links já compartilhados continuam valendo.
+            for chave, valor in novo.items():
+                setattr(veiculo, chave, valor)
+            alterados += 1
+    sessao.commit()
+    avisar(request, f"{alterados} ficha(s) atualizada(s).")
+    destino = "/admin/fichas?todas=1" if dados.get("todas") == "1" else "/admin/fichas"
+    return voltar(destino)
+
+
 # ---------------------------------------------------------------- vendas
 
 
@@ -373,7 +456,7 @@ def vendas(request: Request, usuario: Usuario = Depends(usuario_logado), sessao:
     """Dashboard: os números e gráficos são calculados no navegador (static/js/vendas.js)."""
     veiculos = sessao.scalars(select(Veiculo).options(selectinload(Veiculo.fotos)).order_by(Veiculo.id))
     return render(
-        request, sessao, "admin/vendas.html", {"usuario": usuario, "veiculos": [veiculo_para_json(v) for v in veiculos]}
+        request, sessao, "admin/vendas.html", {"usuario": usuario, "veiculos": [veiculo_para_json(v, privado=True) for v in veiculos]}
     )
 
 

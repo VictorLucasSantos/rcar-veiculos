@@ -10,7 +10,7 @@
           {% if not v.ativo %}<span class="etiqueta">fora do site</span>{% elif v.destaque %}<span class="etiqueta destaque">destaque</span>{% endif %}</td>
         <td>{{ v.ano }}</td>
         <td class="dir">{{ (v.km | km) or '—' }}</td>
-        <td class="dir">{{ (v.preco | reais) or 'Consulte' }}</td>
+        <td class="dir">{{ (v.preco | reais) or 'Consulte' }}{% if v.desconto %}<br><small class="etiqueta destaque">−{{ v.desconto_pct }}%</small>{% endif %}</td>
         <td>{% include "admin/_situacao.html" %}</td>
       </tr>
     {% endfor %}

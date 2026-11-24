@@ -70,13 +70,25 @@
       );
   }
 
+  // Mesmas regras de Veiculo.desconto e desconto_pct em app/models.py.
+  const desconto = (v) => (v.preco && v.preco_anterior && v.preco_anterior > v.preco ? v.preco_anterior - v.preco : 0);
+  const descontoPct = (v) => (desconto(v) ? Math.round((100 * desconto(v)) / v.preco_anterior) : 0);
+
   function selo(v) {
     if (v.situacao === "reservado") return '<span class="selo reservado">Reservado</span>';
+    if (desconto(v)) return `<span class="selo oferta">Baixou ${descontoPct(v)}%</span>`;
     if (v.destaque) return '<span class="selo destaque">Destaque</span>';
     return "";
   }
 
-  const precoHTML = (v) => (v.preco ? reais(v.preco) : '<span class="consulte">Consulte o preço</span>');
+  // Mesmo HTML do macro preco() em app/templates/_macros.html.
+  function precoHTML(v) {
+    if (!v.preco) return '<span class="consulte">Consulte o preço</span>';
+    if (!desconto(v)) return reais(v.preco);
+    return `<span class="de">De <s>${reais(v.preco_anterior)}</s> por</span>
+<span class="por">${reais(v.preco)}</span>
+<span class="economia">${reais(desconto(v))} a menos</span>`;
+  }
 
   function fichaCurta(v) {
     const itens = [ano(v), km(v.km), v.cambio, v.combustivel].filter(Boolean);
@@ -88,7 +100,7 @@
     const capa = v.fotos[0];
     return `
 <a class="carro" href="${linkVeiculo(v)}" data-carro data-marca="${esc(v.marca)}" data-cambio="${esc(v.cambio)}"
-   data-preco="${v.preco ?? ""}" data-ano="${v.ano_modelo}" data-km="${v.km ?? ""}" data-ordem="${ordem}"
+   data-preco="${v.preco ?? ""}" data-ano="${v.ano_modelo}" data-km="${v.km ?? ""}" data-ordem="${ordem}" data-desconto="${desconto(v)}"
    data-busca="${esc(`${titulo(v)} ${v.cor} ${ano(v)}`.toLowerCase())}">
   <div class="foto">
     ${capa ? `<img src="${esc(foto(capa))}" alt="${esc(`${titulo(v)} ${ano(v)}`)}" width="640" height="480" loading="lazy" decoding="async">` : '<span class="vazia">Foto em breve</span>'}
@@ -111,6 +123,6 @@
 
   window.RcarDemo = {
     CHAVE, raiz, SITUACOES, ler, gravar, apagar, publicado, esc, milhar, reais, km, nome, titulo, ano,
-    foto, noSite, credito, estoque, linkVeiculo, selo, precoHTML, fichaCurta, cartao, linkWhatsapp,
+    foto, noSite, credito, estoque, linkVeiculo, selo, precoHTML, desconto, descontoPct, fichaCurta, cartao, linkWhatsapp,
   };
 })();

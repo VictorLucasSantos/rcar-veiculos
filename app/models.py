@@ -15,6 +15,7 @@ SITUACOES = {
 
 CAMBIOS = ["Manual", "Automático", "CVT", "Automatizado"]
 COMBUSTIVEIS = ["Flex", "Gasolina", "Etanol", "Diesel", "Híbrido", "Elétrico"]
+ORIGENS_VENDA = ["WhatsApp", "Instagram", "Facebook/Marketplace", "Site", "Indicação", "Salão", "Outro"]
 MARCAS = [
     "Chevrolet", "Fiat", "Volkswagen", "Toyota", "Hyundai", "Honda", "Jeep", "Renault", "Ford",
     "Nissan", "Peugeot", "Citroën", "Mitsubishi", "Land Rover", "BMW", "Mercedes-Benz", "Audi", "BYD",
@@ -37,6 +38,13 @@ class Veiculo(Base):
     cor: Mapped[str] = mapped_column(String(30), default="")
     # Vazio = "Consulte" na loja.
     preco: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Preço "De" (maior que o atual): o site mostra "De R$ X por R$ Y". Precisa ser um preço que o
+    # carro de fato teve; o painel preenche sozinho quando o preço baixa.
+    preco_anterior: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Só no painel: quanto a loja pagou, por quanto vendeu e de onde veio o comprador.
+    preco_compra: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    preco_venda: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    origem_venda: Mapped[str] = mapped_column(String(30), default="")
     descricao: Mapped[str] = mapped_column(Text, default="")
     # Um opcional por linha.
     opcionais: Mapped[str] = mapped_column(Text, default="")
@@ -76,6 +84,21 @@ class Veiculo(Base):
     def na_loja(self) -> bool:
         """Aparece no site: ativo e ainda não vendido."""
         return self.ativo and self.situacao != "vendido"
+
+    @property
+    def desconto(self) -> int:
+        """Quanto baixou em relação ao preço "De" (0 quando não há oferta)."""
+        if self.preco and self.preco_anterior and self.preco_anterior > self.preco:
+            return self.preco_anterior - self.preco
+        return 0
+
+    @property
+    def desconto_pct(self) -> int:
+        return round(100 * self.desconto / self.preco_anterior) if self.desconto else 0
+
+    @property
+    def ficha_incompleta(self) -> bool:
+        return self.km is None or not self.cambio or not self.combustivel
 
 
 class Foto(Base):
