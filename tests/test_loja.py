@@ -169,3 +169,33 @@ def test_modo_estatico_usa_url_publica(cadastrar, cliente, sessao):
     html = cliente.get(f"/veiculo/{v.slug}", headers=cabecalhos).text
     assert 'class="estatico"' in html
     assert unquote(f"https://exemplo.github.io/rcar/veiculo/{v.slug}/") in unquote(html)
+    assert "/static/js/demo.js" in html
+    assert "/static/js/demo.js" not in cliente.get(f"/veiculo/{v.slug}").text
+
+
+def test_demonstracao_so_existe_na_exportacao(cadastrar, admin, cliente, sessao):
+    cadastrar()
+    v = _veiculo(sessao)
+    csrf = csrf_de(admin.get("/admin/veiculos").text)
+    admin.post(f"/admin/veiculos/{v.id}/situacao", data={"csrf": csrf, "situacao": "vendido"})
+
+    for url in ["/demo/admin", "/demo/veiculo", "/demo/estoque.json"]:
+        assert cliente.get(url).status_code == 404, url
+
+    cabecalhos = {"X-Exportar-Estatico": "1"}
+    assert "demo-admin.js" in cliente.get("/demo/admin", headers=cabecalhos).text
+    assert "data-demo-veiculo" in cliente.get("/demo/veiculo", headers=cabecalhos).text
+    dados = cliente.get("/demo/estoque.json", headers=cabecalhos).json()
+    # O painel vê também os vendidos.
+    [item] = dados["veiculos"]
+    assert item["modelo"] == "Onix" and item["situacao"] == "vendido" and item["vendido_em"]
+    assert item["preco"] == 8990000 and item["fotos"] == []
+    assert dados["loja"]["whatsapp"] and dados["versao"]
+
+
+def test_site_sem_laco_nem_financiamento(cadastrar, cliente, sessao):
+    cadastrar()
+    v = _veiculo(sessao)
+    for url in ["/", "/estoque", f"/veiculo/{v.slug}"]:
+        texto = cliente.get(url).text.lower()
+        assert "laço" not in texto and "financiamento" not in texto, url

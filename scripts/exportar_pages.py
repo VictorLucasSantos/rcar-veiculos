@@ -1,8 +1,9 @@
 """Gera a cópia estática do site para o GitHub Pages e, se pedido, publica.
 
 Lê o site em funcionamento (local ou no Render), salva cada página como HTML e
-copia CSS, JS e fotos. A cópia não tem painel: para mudar o estoque, use o painel
-e gere a cópia de novo.
+copia CSS, JS e fotos. A cópia não tem o painel de verdade: para mudar o estoque,
+use o painel e gere a cópia de novo. Ela leva um painel de demonstração em /admin/,
+que roda no navegador e guarda as alterações só nele.
 
 Uso:
     uv run python scripts/exportar_pages.py                       # lê http://localhost:8050
@@ -11,6 +12,7 @@ Uso:
 """
 
 import argparse
+import json
 import re
 import shutil
 import subprocess
@@ -25,6 +27,9 @@ from xml.etree import ElementTree
 RAIZ_PROJETO = Path(__file__).resolve().parent.parent
 PADRAO_RAIZ = "/rcar-veiculos"
 PADRAO_URL = "https://vampira-lady-gacha.github.io/rcar-veiculos"
+
+# Páginas da demonstração do painel → arquivo na cópia.
+DEMONSTRACAO = {"/demo/admin": "admin/index.html", "/demo/veiculo": "demo/veiculo/index.html"}
 
 # data-foto: miniaturas da galeria do veículo, trocadas pelo site.js.
 ATRIBUTO_URL = re.compile(r'(\s(?:href|src|data-foto)=")(/[^"]*)(")')
@@ -85,6 +90,15 @@ def exportar(origem: str, raiz: str, url_publica: str, saida: Path) -> list[str]
         salvar_html(baixar(origem + pagina, cabecalhos).decode("utf-8"), destino_da_pagina(pagina))
     salvar_html(baixar(f"{origem}/__pagina-inexistente__", cabecalhos, aceitar_404=True).decode("utf-8"), "404.html")
 
+    # Demonstração do painel: roda no navegador, com o estoque de demo/estoque.json.
+    for pagina, arquivo in DEMONSTRACAO.items():
+        salvar_html(baixar(origem + pagina, cabecalhos).decode("utf-8"), arquivo)
+    estoque = baixar(f"{origem}/demo/estoque.json", cabecalhos)
+    for veiculo in json.loads(estoque)["veiculos"]:
+        arquivos.update(veiculo["fotos"])
+    (saida / "demo").mkdir(exist_ok=True)
+    (saida / "demo" / "estoque.json").write_bytes(estoque)
+
     for caminho in sorted(arquivos):
         destino = saida / caminho.lstrip("/")
         destino.parent.mkdir(parents=True, exist_ok=True)
@@ -104,11 +118,14 @@ def exportar(origem: str, raiz: str, url_publica: str, saida: Path) -> list[str]
     return paginas
 
 
-def publicar(saida: Path) -> None:
-    """Envia a pasta gerada para o branch gh-pages do mesmo repositório (histórico só da cópia)."""
-    remoto = subprocess.run(
-        ["git", "remote", "get-url", "origin"], cwd=RAIZ_PROJETO, check=True, capture_output=True, text=True
-    ).stdout.strip()
+def publicar(saida: Path, remoto: str = "origin") -> None:
+    """Envia a pasta gerada para o branch gh-pages do repositório (histórico só da cópia).
+
+    `remoto` é o nome de um remote deste projeto ou o endereço de outro repositório."""
+    if "://" not in remoto:
+        remoto = subprocess.run(
+            ["git", "remote", "get-url", remoto], cwd=RAIZ_PROJETO, check=True, capture_output=True, text=True
+        ).stdout.strip()
     with tempfile.TemporaryDirectory() as tmp:
         repo = Path(tmp) / "site"
         shutil.copytree(saida, repo)
@@ -130,13 +147,14 @@ def main() -> None:
     args.add_argument("--url-publica", default=PADRAO_URL, help="Endereço público da cópia")
     args.add_argument("--saida", default=str(RAIZ_PROJETO / "site"), help="Pasta onde gerar o site")
     args.add_argument("--publicar", action="store_true", help="Envia ao branch gh-pages depois de gerar")
+    args.add_argument("--remoto", default="origin", help="Remote ou endereço do repositório que recebe o gh-pages")
     opcoes = args.parse_args()
 
     saida = Path(opcoes.saida)
     paginas = exportar(opcoes.origem, opcoes.raiz.rstrip("/"), opcoes.url_publica.rstrip("/"), saida)
-    print(f"{len(paginas)} páginas geradas em {saida}")
+    print(f"{len(paginas)} páginas geradas em {saida} (mais o painel de demonstração em /admin/)")
     if opcoes.publicar:
-        publicar(saida)
+        publicar(saida, opcoes.remoto)
         print("Cópia enviada ao branch gh-pages.")
 
 

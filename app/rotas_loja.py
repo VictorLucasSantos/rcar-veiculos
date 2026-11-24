@@ -1,6 +1,7 @@
-"""Páginas públicas: início, estoque e página do veículo."""
+"""Páginas públicas: início, estoque e página do veículo. E as páginas da demonstração do painel,
+que só existem na cópia estática do GitHub Pages."""
 
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import PlainTextResponse, Response
@@ -8,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import obter_sessao
-from app.models import Veiculo
+from app.models import CAMBIOS, COMBUSTIVEIS, MARCAS, Veiculo
 from app.servicos import ler_config, link_whatsapp, mensagem_interesse
 from app.web import eh_exportacao, render, url_publica
 
@@ -60,11 +61,66 @@ def veiculo(slug: str, request: Request, sessao: Session = Depends(obter_sessao)
             "veiculo": item,
             "outros": outros,
             "url_interesse": link_whatsapp(loja["whatsapp"], mensagem_interesse(item, loja, endereco)),
-            "url_financiar": link_whatsapp(
-                loja["whatsapp"], f"Olá, {loja['nome_loja']}! Quero simular o financiamento do {item.titulo} {item.ano}."
-            ),
         },
     )
+
+
+# ---------------------------------------------------------------- demonstração do painel (cópia estática)
+
+
+def _so_na_exportacao(request: Request) -> None:
+    """No servidor de verdade o painel é o /admin; estas páginas só servem ao exportador do GitHub Pages."""
+    if not eh_exportacao(request):
+        raise HTTPException(404)
+
+
+@roteador.get("/demo/admin")
+def demo_admin(request: Request, sessao: Session = Depends(obter_sessao)):
+    _so_na_exportacao(request)
+    listas = {"marcas": MARCAS, "cambios": CAMBIOS, "combustiveis": COMBUSTIVEIS}
+    return render(request, sessao, "demo/admin.html", {"listas": listas})
+
+
+@roteador.get("/demo/veiculo")
+def demo_veiculo(request: Request, sessao: Session = Depends(obter_sessao)):
+    _so_na_exportacao(request)
+    return render(request, sessao, "demo/veiculo.html")
+
+
+@roteador.get("/demo/estoque.json")
+def demo_estoque(request: Request, sessao: Session = Depends(obter_sessao)):
+    """Todos os veículos (também vendidos e ocultos), como o painel vê. Cada exportação é uma versão nova."""
+    _so_na_exportacao(request)
+    loja = ler_config(sessao)
+    veiculos = sessao.scalars(select(Veiculo).options(selectinload(Veiculo.fotos)).order_by(Veiculo.id))
+    return {
+        "versao": datetime.now().isoformat(timespec="seconds"),
+        "loja": {chave: loja[chave] for chave in ("nome_loja", "whatsapp", "cidade")},
+        "veiculos": [
+            {
+                "id": v.id,
+                "marca": v.marca,
+                "modelo": v.modelo,
+                "versao": v.versao,
+                "ano_fabricacao": v.ano_fabricacao,
+                "ano_modelo": v.ano_modelo,
+                "km": v.km,
+                "cambio": v.cambio,
+                "combustivel": v.combustivel,
+                "cor": v.cor,
+                "preco": v.preco,
+                "descricao": v.descricao,
+                "opcionais": v.opcionais,
+                "situacao": v.situacao,
+                "ativo": v.ativo,
+                "destaque": v.destaque,
+                "criado_em": v.criado_em.isoformat(timespec="seconds"),
+                "vendido_em": v.vendido_em.isoformat(timespec="seconds") if v.vendido_em else None,
+                "fotos": [f"/media/{f.arquivo}" for f in v.fotos],
+            }
+            for v in veiculos
+        ],
+    }
 
 
 # ---------------------------------------------------------------- SEO

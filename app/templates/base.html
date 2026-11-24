@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% block titulo %}{{ loja.nome_loja }}{% endblock %}</title>
-<meta name="description" content="{% block descricao %}{{ loja.nome_loja }} em {{ loja.cidade }}: 11 anos vendendo carros, financiamento facilitado por 8 bancos e entrega com laço.{% endblock %}">
+<meta name="description" content="{% block descricao %}{{ loja.nome_loja }} em {{ loja.cidade }}: 11 anos vendendo carros em Jaru e região, com o estoque completo e contato pelo WhatsApp.{% endblock %}">
 <meta property="og:title" content="{{ self.titulo() | trim }}">
 <meta property="og:description" content="{{ self.descricao() | trim }}">
 <meta property="og:image" content="{% block og_imagem %}{{ url_publica }}/static/img/showroom.jpg{% endblock %}">
@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:ital,wght@0,500;0,700;1,700;1,800;1,900&family=Albert+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="/static/css/site.css?v=1">
+<link rel="stylesheet" href="/static/css/site.css?v=2">
 </head>
 <body>
 
@@ -28,7 +28,6 @@
     <nav aria-label="Seções">
       <a href="/estoque" {% if caminho.startswith('/estoque') or caminho.startswith('/veiculo') %}aria-current="page"{% endif %}>Estoque</a>
       <a class="sec" href="/#entregas">Entregas</a>
-      <a class="sec" href="/#financiamento">Financiamento</a>
       <a class="sec" href="/#contato">Contato</a>
       <a class="btn red sm" href="{{ link_whatsapp(loja.whatsapp, 'Olá, R-CAR! Vim pelo site.') }}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#wa"/></svg>WhatsApp</a>
     </nav>
@@ -46,6 +45,7 @@
   </div>
 </footer>
 <div class="toast" id="toast" hidden></div>
-<script src="/static/js/site.js?v=1" defer></script>
+{% if estatico %}<script src="/static/js/demo.js?v=1" defer></script>{% endif %}
+<script src="/static/js/site.js?v=2" defer></script>
 </body>
 </html>

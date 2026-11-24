@@ -8,10 +8,10 @@
       <div>
         <h1 class="cromo">Seu próximo carro está debaixo do lustre.</h1>
         <span class="red-line" aria-hidden="true"></span>
-        <p>Há 11 anos vendendo carros em Jaru. Financiamento facilitado por 8 bancos e cada entrega feita com laço, foto e o carro pronto para rodar.</p>
+        <p>Há 11 anos vendendo carros em Jaru. Cada entrega é feita no salão, com foto e o carro pronto para rodar.</p>
         <div class="actions">
           {% if total_estoque %}
-          <a class="btn red" href="/estoque">{{ 'Ver o carro do estoque' if total_estoque == 1 else 'Ver os ' ~ total_estoque ~ ' carros do estoque' }}</a>
+          <a class="btn red" href="/estoque" data-total-estoque>{{ 'Ver o carro do estoque' if total_estoque == 1 else 'Ver os ' ~ total_estoque ~ ' carros do estoque' }}</a>
           <a class="btn line" href="{{ link_whatsapp(loja.whatsapp, 'Olá, R-CAR! Vim pelo site.') }}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#wa"/></svg>Falar no WhatsApp</a>
           {% else %}
           <a class="btn red" href="{{ link_whatsapp(loja.whatsapp, 'Olá, R-CAR! Quero ver o estoque.') }}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#wa"/></svg>Ver estoque no WhatsApp</a>
@@ -22,7 +22,7 @@
       </div>
       <div class="duo">
         <figure class="tall"><img src="/static/img/showroom.jpg" alt="Showroom da R-CAR com lustre de cristal e carros expostos dos dois lados" width="344" height="624"></figure>
-        <figure class="short"><img src="/static/img/evoque.jpg" alt="Range Rover Evoque branca com laço azul no showroom da R-CAR" width="507" height="634"><figcaption>Range Rover Evoque, entregue no salão</figcaption></figure>
+        <figure class="short"><img src="/static/img/evoque.jpg" alt="Range Rover Evoque branca no showroom da R-CAR" width="507" height="634"><figcaption>Range Rover Evoque, entregue no salão</figcaption></figure>
       </div>
     </div>
   </section>
@@ -30,7 +30,6 @@
   <section class="nums" aria-label="A R-CAR em números">
     <div class="wrap">
       <div><strong class="cromo">11 anos</strong><span>vendendo veículos</span></div>
-      <div><strong class="cromo">8 bancos</strong><span>para aprovar seu financiamento</span></div>
       <div><strong class="cromo">10 mil</strong><span>seguidores no Instagram</span></div>
       <div><strong class="cromo">1.268</strong><span>posts, quase todos de entregas</span></div>
     </div>
@@ -40,8 +39,9 @@
     <div class="wrap">
       <div class="head">
         <h2 class="cromo">No salão agora</h2>
-        <p>Carros revisados e prontos para sair com laço. Clique para ver fotos, ficha completa e chamar no WhatsApp.</p>
+        <p>Carros prontos para sair do salão. Clique para ver fotos, ficha completa e chamar no WhatsApp.</p>
       </div>
+      <div data-vitrine>
       {% if veiculos %}
       <div class="carros">
         {% for v in veiculos %}{{ carro(v, loop.index0) }}{% endfor %}
@@ -55,43 +55,27 @@
         <a class="btn red sm" href="{{ link_whatsapp(loja.whatsapp, 'Olá, R-CAR! Quero ver o estoque.') }}" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#wa"/></svg>Pedir a lista</a>
       </div>
       {% endif %}
+      </div>
     </div>
   </section>
 
   <section class="block" id="entregas">
     <div class="wrap">
       <div class="head">
-        <div>
-          <svg class="bow" viewBox="0 0 46 20" aria-hidden="true"><path d="M23 10 4 1c-3 0-4 4-3 9s0 9 3 9l19-9zm0 0 19-9c3 0 4 4 3 9s0 9-3 9L23 10z" fill="var(--laco)"/><path d="M23 10 4 1M23 10l19-9M23 10 4 19M23 10l19 9" stroke="var(--lustre)" stroke-width="1.4"/><rect x="19" y="6" width="8" height="8" rx="1.5" fill="var(--laco)" stroke="var(--lustre)" stroke-width="1.4"/></svg>
-          <h2 class="cromo">Entrega com laço azul</h2>
-        </div>
-        <p>Aqui todo carro sai com laço no capô e foto de família debaixo do lustre. São clientes de verdade, de Jaru e região, publicados no nosso Instagram.</p>
+        <h2 class="cromo">Entregas</h2>
+        <p>Todo carro é entregue no salão, com foto do cliente debaixo do lustre. São clientes de verdade, de Jaru e região, publicados no nosso Instagram.</p>
       </div>
       <div class="gallery">
-        <figure class="g1"><img src="/static/img/onix.jpg" alt="Família recebendo um Chevrolet com laço azul no showroom" width="634" height="634" loading="lazy"><figcaption>Entrega em família</figcaption></figure>
-        <figure class="g2"><img src="/static/img/argo.jpg" alt="Casal ao lado de um Fiat Argo branco com laço azul" width="634" height="634" loading="lazy"><figcaption>Fiat Argo</figcaption></figure>
-        <figure class="g3"><img src="/static/img/strada.jpg" alt="Clientes com a chave de uma Fiat cinza com laço azul" width="634" height="634" loading="lazy"><figcaption>Chave na mão</figcaption></figure>
-        <figure class="g4"><img src="/static/img/pulse.jpg" alt="Cliente e vendedor ao lado de um Fiat branco com laço azul" width="634" height="634" loading="lazy"><figcaption>Saiu com laço</figcaption></figure>
+        <figure class="g1"><img src="/static/img/onix.jpg" alt="Família recebendo um Chevrolet no showroom" width="634" height="634" loading="lazy"><figcaption>Entrega em família</figcaption></figure>
+        <figure class="g2"><img src="/static/img/argo.jpg" alt="Casal ao lado de um Fiat Argo branco" width="634" height="634" loading="lazy"><figcaption>Fiat Argo</figcaption></figure>
+        <figure class="g3"><img src="/static/img/strada.jpg" alt="Clientes com a chave de uma Fiat cinza" width="634" height="634" loading="lazy"><figcaption>Chave na mão</figcaption></figure>
+        <figure class="g4"><img src="/static/img/pulse.jpg" alt="Cliente e vendedor ao lado de um Fiat branco" width="634" height="634" loading="lazy"><figcaption>Mais uma entrega</figcaption></figure>
         <figure class="g5"><img src="/static/img/showroom.jpg" alt="Vista do salão da R-CAR com o lustre e a placa da loja ao fundo" width="344" height="624" loading="lazy" style="object-position:50% 38%"><figcaption>O salão da Rua Belo Horizonte</figcaption></figure>
       </div>
       <div class="more">
         <span>Mais entregas toda semana no nosso perfil:</span>
         <a class="btn line sm" href="{{ instagram }}" target="_blank" rel="noopener">Abrir o Instagram</a>
       </div>
-    </div>
-  </section>
-
-  <section class="block buy" id="financiamento">
-    <div class="wrap">
-      <div class="head">
-        <h2 class="cromo">Financiamento facilitado</h2>
-        <p>Trabalhamos com 8 bancos para achar a parcela que cabe no seu bolso.</p>
-      </div>
-      <ol class="steps">
-        <li><h3>Escolha o carro</h3><p>Veja o estoque aqui no site, chame no WhatsApp ou venha ao salão. Seu usado pode entrar na troca como parte da entrada.</p></li>
-        <li><h3>Simule com 8 bancos</h3><p>Com seus dados e o valor de entrada, montamos a simulação e mostramos as opções lado a lado.</p></li>
-        <li><h3>Busque com laço</h3><p>Crédito aprovado, a R-CAR cuida da documentação. Você só vem buscar e tirar a foto.</p></li>
-      </ol>
     </div>
   </section>
 

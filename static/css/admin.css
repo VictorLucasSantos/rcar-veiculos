@@ -25,6 +25,7 @@
 .aviso a{color:inherit;font-weight:700}
 .aviso.atencao{background:#33280f;color:#f1d48f;border-color:#5a4718}
 .aviso.erro{background:#3a1416;color:#ffb3b5;border-color:#6b2427}
+.demo-aviso{margin:0 0 18px;padding:8px 12px;border-radius:6px;border:1px dashed #8a6a1d;color:var(--lustre);font-size:.88rem}
 
 .bloco{background:var(--grafite);border:1px solid var(--linha);border-radius:10px;padding:clamp(16px,2.5vw,26px);margin-bottom:22px}
 .bloco>h2{font-size:1.35rem;font-weight:700;margin:0 0 16px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 16px}

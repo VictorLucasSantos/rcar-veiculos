@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Painel (demonstração) · {{ loja.nome_loja }}</title>
+  <link rel="icon" href="/static/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:ital,wght@0,500;0,700;1,700;1,800;1,900&family=Albert+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/static/css/site.css?v=2">
+  <link rel="stylesheet" href="/static/css/admin.css?v=2">
+</head>
+<body>
+  {# Painel de demonstração da cópia estática: mesmas telas de app/templates/admin, montadas por
+     demo-admin.js com o estoque guardado neste navegador. #}
+  <script type="application/json" data-listas>{{ listas | tojson }}</script>
+
+  <main class="entrar-pagina" data-login hidden>
+    <form class="entrar-cartao bloco" data-entrar>
+      <img class="entrar-logo" src="/static/img/logo.png" alt="{{ loja.nome_loja }}">
+      <h1>Painel da loja</h1>
+      <p class="demo-aviso">Demonstração: entre com qualquer senha. As alterações ficam só neste navegador.</p>
+      <label class="campo"><span>E-mail</span><input class="entrada" type="email" name="email" value="demo@rcarveiculos.com.br" autocomplete="off" required></label>
+      <label class="campo"><span>Senha</span><input class="entrada" type="password" name="senha" autocomplete="off" required autofocus></label>
+      <button class="btn red" type="submit">Entrar</button>
+      <a class="voltar-site" href="/">Voltar para o site</a>
+    </form>
+  </main>
+
+  <div class="painel" data-painel hidden>
+    <aside class="painel-lado">
+      <a class="marca" href="#/"><img src="/static/img/logo.png" alt="{{ loja.nome_loja }}"><span>Painel</span></a>
+      <nav class="painel-nav" aria-label="Painel">
+        <a href="#/" data-nav="inicio">Início</a>
+        <a href="#/veiculos" data-nav="veiculos">Veículos</a>
+      </nav>
+      <div class="rodape-lado">
+        <a href="/" target="_blank" rel="noopener">Ver o site ↗</a>
+        <button type="button" data-restaurar>Restaurar estoque</button>
+        <button type="button" data-sair>Sair</button>
+      </div>
+    </aside>
+    <main class="painel-principal">
+      <p class="demo-aviso">Demonstração: as alterações ficam salvas só neste navegador e aparecem no site aberto aqui.</p>
+      <div data-app></div>
+    </main>
+  </div>
+
+  <script src="/static/js/demo.js?v=1" defer></script>
+  <script src="/static/js/demo-admin.js?v=1" defer></script>
+</body>
+</html>

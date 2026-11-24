@@ -1,13 +1,13 @@
 # R-CAR Veículos
 
-Site da R-CAR Veículos (Jaru-RO), com showroom, estoque de carros, entregas com laço, financiamento e contato pelo WhatsApp. Tem também um painel para manter o estoque.
+Site da R-CAR Veículos (Jaru-RO), com showroom, estoque de carros, entregas e contato pelo WhatsApp. Tem também um painel para manter o estoque.
 
 ## O que tem
 
 **Site (público)**
 - Início: o mesmo visual do site original, com a seção "No salão agora" mostrando até 6 carros do estoque.
 - Estoque (`/estoque`): todos os carros disponíveis e reservados, com busca e filtro por marca, câmbio e ordem (preço, ano, km). O filtro roda no navegador, então funciona igual na cópia do GitHub Pages.
-- Página do veículo: galeria de fotos, preço (ou "Consulte o preço"), ficha (ano, km, câmbio, combustível, cor), opcionais, descrição e botões de WhatsApp com a mensagem pronta: "Tenho interesse" e "Simular financiamento".
+- Página do veículo: galeria de fotos, preço (ou "Consulte o preço"), ficha (ano, km, câmbio, combustível, cor), opcionais, descrição e botão "Tenho interesse", que abre o WhatsApp com a mensagem pronta.
 - Com o estoque vazio, o site mostra o botão para pedir a lista pelo WhatsApp, como era antes.
 
 **Painel (`/admin`)**
@@ -60,7 +60,13 @@ Faça backup da pasta `dados/` (banco `loja.db` e `uploads/`).
 
 ## Cópia no GitHub Pages
 
-O GitHub Pages só serve arquivos estáticos, então ele recebe uma **cópia do site**: início, estoque e páginas dos veículos, sem o painel. Os carros e preços são os do momento em que a cópia foi gerada.
+O GitHub Pages só serve arquivos estáticos, então ele recebe uma **cópia do site**: início, estoque e páginas dos veículos, sem o painel de verdade. Os carros e preços são os do momento em que a cópia foi gerada.
+
+A cópia leva um **painel de demonstração** em `/admin/` (por exemplo https://victorlucassantos.github.io/rcar-veiculos/admin/), para mostrar a manutenção a clientes:
+- Entra com qualquer senha e tem as mesmas telas do painel real: início, lista com situação, cadastro, edição, fotos e apagar.
+- Tudo fica guardado só no navegador de quem está testando. Enquanto a demonstração está ativa, o site aberto nesse navegador mostra o estoque alterado, com uma faixa "Demonstração · abrir o painel".
+- "Restaurar estoque" volta ao que está publicado. Publicar uma cópia nova também recomeça a demonstração.
+- Arquivos: `static/js/demo.js` (dados e cartões), `static/js/demo-admin.js` (telas), `app/templates/demo/` e as rotas `/demo/*` em `app/rotas_loja.py`, que só respondem ao exportador.
 
 Para atualizar depois de mudar o estoque no painel, gere a cópia a partir do site no Render (ou do local) e publique:
 
@@ -69,6 +75,12 @@ uv run python scripts/exportar_pages.py --origem https://rcar-veiculos.onrender.
 ```
 
 Sem `--publicar`, só gera a pasta `site/` para conferir. O envio vai para o branch `gh-pages`. Em **Settings → Pages**, escolha **Deploy from a branch → `gh-pages` / root**. O endereço fica https://vampira-lady-gacha.github.io/rcar-veiculos/.
+
+Para publicar em outro repositório, como o fork https://github.com/VictorLucasSantos/rcar-veiculos, informe o endereço público e o repositório:
+
+```bash
+uv run python scripts/exportar_pages.py --url-publica https://victorlucassantos.github.io/rcar-veiculos --remoto https://github.com/VictorLucasSantos/rcar-veiculos.git --publicar
+```
 
 ## Estrutura
 

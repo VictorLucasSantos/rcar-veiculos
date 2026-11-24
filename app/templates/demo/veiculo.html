@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{# Página de um carro na demonstração do painel (só na cópia estática): site.js monta o conteúdo
+   a partir do estoque guardado no navegador. #}
+
+{% block titulo %}Veículo · {{ loja.nome_loja }}{% endblock %}
+
+{% block conteudo %}
+<div class="wrap" data-demo-veiculo>
+  <p class="migalha"><a href="/estoque">Estoque</a> / Carregando…</p>
+</div>
+{% endblock %}
