@@ -114,6 +114,15 @@
   </form>
 </section>
 
+{% if arte %}
+<section class="bloco" id="arte">
+  <h2>Arte para Instagram <small>Story ou feed com foto, preço e WhatsApp. Gerada aqui no navegador.</small></h2>
+  <script type="application/json" data-arte-dados>{{ arte | tojson }}</script>
+  <div class="arte" data-arte><p class="apagado">Carregando a prévia…</p></div>
+  <script src="/static/js/arte.js?v=2" defer></script>
+</section>
+{% endif %}
+
 <form class="bloco" method="post" action="/admin/veiculos/{{ v.id }}/apagar" data-confirmar="Apagar “{{ v.titulo }}” com todas as fotos? Para tirar do site sem perder o cadastro, marque como vendido.">
   <h2>Apagar veículo</h2>
   <input type="hidden" name="csrf" value="{{ csrf }}">

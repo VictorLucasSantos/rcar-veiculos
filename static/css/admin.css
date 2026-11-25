@@ -100,6 +100,12 @@ textarea.entrada{resize:vertical;line-height:1.5}
 .entrar-cartao h1{text-align:center;font-size:1.8rem}
 .voltar-site{text-align:center;font-size:.92rem;color:var(--apagado)}
 
+/* arte para Instagram (static/js/arte.js) */
+.arte{display:grid;gap:14px;justify-items:start}
+.arte-controles{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.arte-previa{display:block;width:min(100%,360px);height:auto;border-radius:10px;border:1px solid var(--linha);background:var(--noite);transition:opacity .2s}
+.arte.desenhando .arte-previa{opacity:.5}
+
 /* dashboard de vendas (static/js/vendas.js) */
 .dash-filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:18px}
 .dash-filtros label{display:grid;gap:4px;font-size:.85rem;color:var(--apagado)}

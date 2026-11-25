@@ -309,6 +309,17 @@ def test_completar_fichas(cadastrar, admin, sessao):
     assert f'name="km-{v.id}"' not in admin.get("/admin/fichas").text
 
 
+def test_arte_para_instagram_no_painel(cadastrar, admin, sessao):
+    cadastrar(preco="80.000", preco_anterior="90.000")
+    v = _veiculo(sessao)
+    pagina = admin.get(f"/admin/veiculos/{v.id}").text
+    assert "arte.js" in pagina
+    arte = json.loads(re.search(r"data-arte-dados>(.*?)</script>", pagina, re.S).group(1))
+    assert arte["selo"] == "Baixou 11%" and arte["oferta"]
+    assert arte["preco"] == 8000000 and arte["preco_anterior"] == 9000000
+    assert arte["loja"]["telefone"] == "(69) 99332-6685" and arte["ficha"][1] == "45.000 km"
+
+
 def test_site_sem_laco_nem_financiamento(cadastrar, cliente, sessao):
     cadastrar()
     v = _veiculo(sessao)

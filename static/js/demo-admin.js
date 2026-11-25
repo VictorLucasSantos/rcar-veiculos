@@ -240,6 +240,34 @@ ${avisoHTML()}
 
   const fichaIncompleta = (v) => v.km == null || !v.cambio || !v.combustivel;
 
+  function telefone(numero) {
+    let d = String(numero).replace(/\D/g, "");
+    if (d.startsWith("55") && (d.length === 12 || d.length === 13)) d = d.slice(2);
+    if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+    if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return numero;
+  }
+
+  // Mesmos dados de dados_arte() em app/servicos.py.
+  function dadosArte(v) {
+    const selo = v.situacao === "reservado" ? "Reservado" : D.desconto(v) ? `Baixou ${D.descontoPct(v)}%` : v.destaque ? "Destaque" : "";
+    const capa = v.fotos[0];
+    return {
+      nome: D.nome(v),
+      versao: v.versao,
+      ano: D.ano(v),
+      ficha: [D.ano(v), D.km(v.km), v.cambio, v.combustivel],
+      preco: v.preco,
+      preco_anterior: D.desconto(v) ? v.preco_anterior : null,
+      selo,
+      oferta: Boolean(D.desconto(v)) && v.situacao !== "reservado",
+      foto: capa ? D.foto(capa) : null,
+      ilustrativa: Boolean(capa && D.credito(v, capa)),
+      logo: `${D.raiz}/static/img/logo.png`,
+      loja: { telefone: telefone(dados.loja.whatsapp), instagram: dados.loja.instagram || "", endereco: dados.loja.cidade },
+    };
+  }
+
   // Mesma tabela de app/templates/admin/fichas.html.
   function telaFichas(parametros) {
     const todas = parametros.get("todas") === "1";
@@ -371,6 +399,10 @@ ${v ? `
     <button class="btn red sm" type="submit">Enviar fotos</button>
   </form>
 </section>
+<section class="bloco" id="arte">
+  <h2>Arte para Instagram <small>Story ou feed com foto, preço e WhatsApp. Gerada aqui no navegador.</small></h2>
+  <div class="arte" data-arte-demo><p class="apagado">Carregando a prévia…</p></div>
+</section>
 <section class="bloco">
   <h2>Apagar veículo</h2>
   <p class="apagado">Vendeu? Marque como “Vendido”: ele sai do site e entra na conta do mês. Apagar remove o cadastro e as fotos de vez.</p>
@@ -404,6 +436,8 @@ ${v ? `
       else if (partes[1]) {
         veiculoAberto = veiculo(Number(partes[1]));
         app.innerHTML = veiculoAberto ? telaFormulario(veiculoAberto) : '<p class="aviso erro">Veículo não encontrado.</p>';
+        const arte = app.querySelector("[data-arte-demo]");
+        if (arte) window.RcarArte.montar(arte, dadosArte(veiculoAberto));
       } else app.innerHTML = telaVeiculos(parametros);
     } else app.innerHTML = telaInicio();
     painel.querySelectorAll("[data-nav]").forEach((a) => {

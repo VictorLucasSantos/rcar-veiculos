@@ -213,6 +213,33 @@ def veiculo_para_json(v: Veiculo, privado: bool = False) -> dict:
     return dados
 
 
+def dados_arte(v: Veiculo, loja: dict[str, str]) -> dict:
+    """O que static/js/arte.js precisa para desenhar a arte de Instagram do veículo."""
+    if v.situacao == "reservado":
+        selo = "Reservado"
+    elif v.desconto:
+        selo = f"Baixou {v.desconto_pct}%"
+    elif v.destaque:
+        selo = "Destaque"
+    else:
+        selo = ""
+    capa = v.foto_capa
+    return {
+        "nome": v.nome,
+        "versao": v.versao,
+        "ano": v.ano,
+        "ficha": [v.ano, quilometros(v.km), v.cambio, v.combustivel],
+        "preco": v.preco,
+        "preco_anterior": v.preco_anterior if v.desconto else None,
+        "selo": selo,
+        "oferta": bool(v.desconto) and v.situacao != "reservado",
+        "foto": f"/media/{capa.arquivo}" if capa else None,
+        "ilustrativa": bool(capa and capa.ilustrativa),
+        "logo": "/static/img/logo.png",
+        "loja": {"telefone": formatar_telefone(loja["whatsapp"]), "instagram": loja["instagram"], "endereco": loja["cidade"]},
+    }
+
+
 def mensagem_interesse(veiculo: Veiculo, loja: dict[str, str], url: str = "") -> str:
     partes = [f"Olá, {loja['nome_loja']}! Tenho interesse no {veiculo.titulo} {veiculo.ano}"]
     if veiculo.preco:

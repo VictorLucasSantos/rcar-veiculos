@@ -18,9 +18,11 @@ from app.servicos import (
     apagar_arquivo_foto,
     autenticar,
     conferir_senha,
+    dados_arte,
     definir_preco,
     gerar_hash,
     ler_centavos,
+    ler_config,
     ler_inteiro,
     mudar_situacao,
     reais,
@@ -278,7 +280,8 @@ def editar_veiculo(
     veiculo_id: int, request: Request, usuario: Usuario = Depends(usuario_logado), sessao: Session = Depends(obter_sessao)
 ):
     veiculo = _carregar_veiculo(sessao, veiculo_id)
-    return render(request, sessao, "admin/veiculo_form.html", _contexto_form(usuario, veiculo))
+    contexto = _contexto_form(usuario, veiculo) | {"arte": dados_arte(veiculo, ler_config(sessao))}
+    return render(request, sessao, "admin/veiculo_form.html", contexto)
 
 
 @roteador.post("/veiculos/{veiculo_id}")

@@ -99,7 +99,7 @@ def demo_estoque(request: Request, sessao: Session = Depends(obter_sessao)):
     ]
     return {
         "versao": datetime.now().isoformat(timespec="seconds"),
-        "loja": {chave: loja[chave] for chave in ("nome_loja", "whatsapp", "cidade")},
+        "loja": {chave: loja[chave] for chave in ("nome_loja", "whatsapp", "cidade", "instagram")},
         "veiculos": veiculos + vendas_de_exemplo(veiculos),
     }
 
