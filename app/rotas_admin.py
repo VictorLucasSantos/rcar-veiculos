@@ -19,6 +19,7 @@ from app.servicos import (
     autenticar,
     conferir_senha,
     dados_arte,
+    dados_placa,
     definir_preco,
     gerar_hash,
     ler_centavos,
@@ -31,7 +32,7 @@ from app.servicos import (
     slug_unico,
     veiculo_para_json,
 )
-from app.web import avisar, render
+from app.web import avisar, render, url_publica
 
 roteador = APIRouter(prefix="/admin")
 
@@ -282,6 +283,17 @@ def editar_veiculo(
     veiculo = _carregar_veiculo(sessao, veiculo_id)
     contexto = _contexto_form(usuario, veiculo) | {"arte": dados_arte(veiculo, ler_config(sessao))}
     return render(request, sessao, "admin/veiculo_form.html", contexto)
+
+
+@roteador.get("/veiculos/{veiculo_id}/placa")
+def placa_veiculo(
+    veiculo_id: int, request: Request, usuario: Usuario = Depends(usuario_logado), sessao: Session = Depends(obter_sessao)
+):
+    """Placa A4 para o vidro do carro, com QR code para a página dele no site."""
+    veiculo = _carregar_veiculo(sessao, veiculo_id)
+    url = f"{url_publica(request)}/veiculo/{veiculo.slug}"
+    placa = dados_placa(veiculo, ler_config(sessao), url)
+    return render(request, sessao, "admin/placa.html", {"veiculo": veiculo, "placa": placa})
 
 
 @roteador.post("/veiculos/{veiculo_id}")

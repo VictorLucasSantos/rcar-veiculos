@@ -10,6 +10,7 @@
   <div class="acoes">
     <a class="btn line sm" href="/admin/veiculos">Voltar</a>
     {% if v and v.na_loja %}<a class="btn line sm" href="/veiculo/{{ v.slug }}" target="_blank" rel="noopener">Ver no site ↗</a>{% endif %}
+    {% if v %}<a class="btn line sm" href="/admin/veiculos/{{ v.id }}/placa" target="_blank" rel="noopener">Placa para o vidro</a>{% endif %}
   </div>
 </div>
 

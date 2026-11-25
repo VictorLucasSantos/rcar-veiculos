@@ -183,6 +183,7 @@ def veiculo_para_json(v: Veiculo, privado: bool = False) -> dict:
     nunca para a cópia pública do GitHub Pages."""
     dados = {
         "id": v.id,
+        "slug": v.slug,
         "marca": v.marca,
         "modelo": v.modelo,
         "versao": v.versao,
@@ -237,6 +238,30 @@ def dados_arte(v: Veiculo, loja: dict[str, str]) -> dict:
         "ilustrativa": bool(capa and capa.ilustrativa),
         "logo": "/static/img/logo.png",
         "loja": {"telefone": formatar_telefone(loja["whatsapp"]), "instagram": loja["instagram"], "endereco": loja["cidade"]},
+    }
+
+
+def dados_placa(v: Veiculo, loja: dict[str, str], url: str) -> dict:
+    """O que static/js/placa.js precisa para montar a placa do vidro. `url` é a página do carro no site."""
+    arte = dados_arte(v, loja)
+    return {
+        "nome": v.nome,
+        "versao": v.versao,
+        "ficha": arte["ficha"],
+        "preco": v.preco,
+        "preco_anterior": arte["preco_anterior"],
+        "selo": arte["selo"],
+        "situacao": v.situacao,
+        "opcionais": v.lista_opcionais[:8],
+        "url": url,
+        "aviso": None if v.na_loja else "Este carro não aparece no site agora (vendido ou oculto): o QR vai abrir uma página que não existe.",
+        "logo": "/static/img/logo.png",
+        "loja": {
+            "nome_loja": loja["nome_loja"],
+            "telefone": formatar_telefone(loja["whatsapp"]),
+            "instagram": loja["instagram"],
+            "cidade": loja["cidade"],
+        },
     }
 
 

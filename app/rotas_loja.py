@@ -88,6 +88,12 @@ def demo_veiculo(request: Request, sessao: Session = Depends(obter_sessao)):
     return render(request, sessao, "demo/veiculo.html")
 
 
+@roteador.get("/demo/placa")
+def demo_placa(request: Request, sessao: Session = Depends(obter_sessao)):
+    _so_na_exportacao(request)
+    return render(request, sessao, "demo/placa.html")
+
+
 @roteador.get("/demo/estoque.json")
 def demo_estoque(request: Request, sessao: Session = Depends(obter_sessao)):
     """Todos os veículos (também vendidos e ocultos), como o painel vê. Cada exportação é uma versão nova."""

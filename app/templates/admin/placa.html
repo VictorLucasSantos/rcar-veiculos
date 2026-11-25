@@ -1,0 +1,4 @@
+{% extends "placa_base.html" %}
+{% block titulo %}Placa · {{ veiculo.titulo }} {{ veiculo.ano }}{% endblock %}
+{% block voltar %}/admin/veiculos/{{ veiculo.id }}{% endblock %}
+{% block dados %}<script type="application/json" data-placa-dados>{{ placa | tojson }}</script>{% endblock %}

@@ -19,6 +19,8 @@ Site da R-CAR Veículos (Jaru-RO), com showroom, estoque de carros, entregas e c
 - Destaque: o carro aparece primeiro, com selo vermelho. "Mostrar no site" desmarcado esconde o carro sem apagar.
 - Vendas: dashboard com faturamento, ticket médio, tempo médio até vender, média por mês e valor do estoque; gráficos por mês (carros ou faturamento), por marca e por faixa de preço; últimas vendas. Filtra por período e marca. Usa os carros marcados como vendidos (data e preço do cadastro); os cálculos ficam em `static/js/vendas.js`, o mesmo arquivo da demonstração.
 - Fotos ilustrativas: uma foto tem `credito` e `fonte` quando é de outro carro do mesmo modelo (por exemplo, do Wikimedia Commons). O site mostra o selo "Foto ilustrativa" no card e o crédito do autor e da licença na página do carro.
+- Arte para Instagram: na tela do carro, gera a imagem de Story (9:16) ou Feed (4:5) com foto, preço e WhatsApp, desenhada no navegador (`static/js/arte.js`).
+- Placa para o vidro (`/admin/veiculos/<id>/placa`): folha A4 para imprimir e colar no carro do salão, com preço (De/Por na oferta), ficha, até 8 opcionais e um QR code que abre a página do carro no site. O QR é gerado no navegador (`static/js/placa.js`, biblioteca qrcode-generator do cdnjs) e aponta para `URL_PUBLICA`, então configure essa variável antes de imprimir.
 - Loja: WhatsApp que recebe os interessados, Instagram, endereço, cidade e horário.
 - Minha senha: trocar a senha do painel.
 

@@ -322,6 +322,7 @@ ${avisoHTML()}
   <div class="acoes">
     <a class="btn line sm" href="#/veiculos">Voltar</a>
     ${v && D.noSite(v) ? `<a class="btn line sm" href="${D.linkVeiculo(v)}" target="_blank" rel="noopener">Ver no site ↗</a>` : ""}
+    ${v ? `<a class="btn line sm" href="${D.raiz}/demo/placa/?id=${v.id}" target="_blank" rel="noopener">Placa para o vidro</a>` : ""}
   </div>
 </div>
 ${avisoHTML()}

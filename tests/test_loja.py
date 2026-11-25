@@ -3,9 +3,11 @@ import re
 from io import BytesIO
 from urllib.parse import unquote
 
+from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy import select
 
+from app.main import app
 from app.models import Foto, Veiculo
 from app.servicos import ler_centavos, ler_inteiro, quilometros, reais, slugificar
 from tests.conftest import ONIX, csrf_de
@@ -181,12 +183,13 @@ def test_demonstracao_so_existe_na_exportacao(cadastrar, admin, cliente, sessao)
     csrf = csrf_de(admin.get("/admin/veiculos").text)
     admin.post(f"/admin/veiculos/{v.id}/situacao", data={"csrf": csrf, "situacao": "vendido"})
 
-    for url in ["/demo/admin", "/demo/veiculo", "/demo/estoque.json"]:
+    for url in ["/demo/admin", "/demo/veiculo", "/demo/placa", "/demo/estoque.json"]:
         assert cliente.get(url).status_code == 404, url
 
     cabecalhos = {"X-Exportar-Estatico": "1"}
     assert "demo-admin.js" in cliente.get("/demo/admin", headers=cabecalhos).text
     assert "data-demo-veiculo" in cliente.get("/demo/veiculo", headers=cabecalhos).text
+    assert "demo-placa.js" in cliente.get("/demo/placa", headers=cabecalhos).text
     dados = cliente.get("/demo/estoque.json", headers=cabecalhos).json()
     # O painel vê também os vendidos.
     [item] = [d for d in dados["veiculos"] if not d.get("exemplo")]
@@ -326,3 +329,24 @@ def test_site_sem_laco_nem_financiamento(cadastrar, cliente, sessao):
     for url in ["/", "/estoque", f"/veiculo/{v.slug}"]:
         texto = cliente.get(url).text.lower()
         assert "laço" not in texto and "financiamento" not in texto, url
+
+
+def test_placa_para_o_vidro(cadastrar, admin, sessao):
+    cadastrar(preco="80.000", preco_anterior="90.000", opcionais="Ar-condicionado\nCâmera de ré")
+    v = _veiculo(sessao)
+    assert f"/admin/veiculos/{v.id}/placa" in admin.get(f"/admin/veiculos/{v.id}").text
+    with TestClient(app) as anonimo:
+        assert anonimo.get(f"/admin/veiculos/{v.id}/placa", follow_redirects=False).status_code == 303
+
+    pagina = admin.get(f"/admin/veiculos/{v.id}/placa").text
+    assert "qrcode.min.js" in pagina and "placa.js" in pagina
+    placa = json.loads(re.search(r"data-placa-dados>(.*?)</script>", pagina, re.S).group(1))
+    assert placa["url"].endswith(f"/veiculo/{v.slug}")
+    assert placa["selo"] == "Baixou 11%" and placa["preco_anterior"] == 9000000
+    assert placa["opcionais"] == ["Ar-condicionado", "Câmera de ré"] and placa["aviso"] is None
+    assert placa["loja"]["telefone"] == "(69) 99332-6685"
+
+    csrf = csrf_de(admin.get("/admin/veiculos").text)
+    admin.post(f"/admin/veiculos/{v.id}/situacao", data={"csrf": csrf, "situacao": "vendido"})
+    pagina = admin.get(f"/admin/veiculos/{v.id}/placa").text
+    assert json.loads(re.search(r"data-placa-dados>(.*?)</script>", pagina, re.S).group(1))["aviso"]

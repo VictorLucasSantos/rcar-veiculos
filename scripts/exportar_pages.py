@@ -29,7 +29,8 @@ PADRAO_RAIZ = "/rcar-veiculos"
 PADRAO_URL = "https://vampira-lady-gacha.github.io/rcar-veiculos"
 
 # Páginas da demonstração do painel → arquivo na cópia.
-DEMONSTRACAO = {"/demo/admin": "admin/index.html", "/demo/veiculo": "demo/veiculo/index.html"}
+DEMONSTRACAO = {"/demo/admin": "admin/index.html", "/demo/veiculo": "demo/veiculo/index.html",
+                "/demo/placa": "demo/placa/index.html"}
 
 # data-foto: miniaturas da galeria do veículo, trocadas pelo site.js.
 ATRIBUTO_URL = re.compile(r'(\s(?:href|src|data-foto)=")(/[^"]*)(")')

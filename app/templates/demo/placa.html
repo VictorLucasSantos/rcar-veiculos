@@ -1,0 +1,8 @@
+{% extends "placa_base.html" %}
+{# Placa da demonstração do painel (só na cópia estática): demo-placa.js monta os dados a partir
+   do estoque guardado neste navegador. #}
+{% block voltar %}/admin/{% endblock %}
+{% block scripts %}
+  <script src="/static/js/demo.js?v=3" defer></script>
+  <script src="/static/js/demo-placa.js?v=1" defer></script>
+{% endblock %}

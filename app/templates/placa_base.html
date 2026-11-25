@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block titulo %}Placa para o vidro{% endblock %} · {{ loja.nome_loja }}</title>
+  <link rel="icon" href="/static/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:ital,wght@0,500;0,700;1,700;1,800;1,900&family=Albert+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/placa.css?v=1">
+</head>
+<body>
+  {# Placa A4 para colar no vidro do carro no salão. static/js/placa.js monta a folha e o QR code. #}
+  <nav class="placa-barra" aria-label="Ações da placa">
+    <p>Imprima em A4 e cole no vidro do carro. O QR abre a página do carro no site.</p>
+    <button class="btn red" type="button" data-imprimir>Imprimir</button>
+    <a class="btn" href="{% block voltar %}/admin{% endblock %}">Voltar</a>
+  </nav>
+  <main class="placa-pagina">
+    {% block dados %}{% endblock %}
+    <div data-placa><p class="placa-aviso">Montando a placa…</p></div>
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"
+          integrity="sha512-ZDSPMa/JM1D+7kdg2x3BsruQ6T/JpJo3jWDWkCZsP+5yVyp1KfESqLI+7RqB5k24F7p2cV7i2YHh/890y6P6Sw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+  <script src="/static/js/placa.js?v=1" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
