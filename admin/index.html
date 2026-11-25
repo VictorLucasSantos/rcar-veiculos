@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Painel (demonstração) · R-CAR Veículos</title>
+  <link rel="icon" href="/rcar-veiculos/static/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:ital,wght@0,500;0,700;1,700;1,800;1,900&family=Albert+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/rcar-veiculos/static/css/site.css?v=4">
+  <link rel="stylesheet" href="/rcar-veiculos/static/css/admin.css?v=5">
+</head>
+<body>
+  
+  <script type="application/json" data-listas>{"cambios": ["Manual", "Autom\u00e1tico", "CVT", "Automatizado"], "combustiveis": ["Flex", "Gasolina", "Etanol", "Diesel", "H\u00edbrido", "El\u00e9trico"], "marcas": ["Chevrolet", "Fiat", "Volkswagen", "Toyota", "Hyundai", "Honda", "Jeep", "Renault", "Ford", "Nissan", "Peugeot", "Citro\u00ebn", "Mitsubishi", "Land Rover", "BMW", "Mercedes-Benz", "Audi", "BYD"], "origens": ["WhatsApp", "Instagram", "Facebook/Marketplace", "Site", "Indica\u00e7\u00e3o", "Sal\u00e3o", "Outro"]}</script>
+
+  <main class="entrar-pagina" data-login hidden>
+    <form class="entrar-cartao bloco" data-entrar>
+      <img class="entrar-logo" src="/rcar-veiculos/static/img/logo.png" alt="R-CAR Veículos">
+      <h1>Painel da loja</h1>
+      <p class="demo-aviso">Demonstração: entre com qualquer senha. As alterações ficam só neste navegador.</p>
+      <label class="campo"><span>E-mail</span><input class="entrada" type="email" name="email" value="demo@rcarveiculos.com.br" autocomplete="off" required></label>
+      <label class="campo"><span>Senha</span><input class="entrada" type="password" name="senha" autocomplete="off" required autofocus></label>
+      <button class="btn red" type="submit">Entrar</button>
+      <a class="voltar-site" href="/rcar-veiculos/">Voltar para o site</a>
+    </form>
+  </main>
+
+  <div class="painel" data-painel hidden>
+    <aside class="painel-lado">
+      <a class="marca" href="#/"><img src="/rcar-veiculos/static/img/logo.png" alt="R-CAR Veículos"><span>Painel</span></a>
+      <nav class="painel-nav" aria-label="Painel">
+        <a href="#/" data-nav="inicio">Início</a>
+        <a href="#/veiculos" data-nav="veiculos">Veículos</a>
+        <a href="#/vendas" data-nav="vendas">Vendas</a>
+      </nav>
+      <div class="rodape-lado">
+        <a href="/rcar-veiculos/" target="_blank" rel="noopener">Ver o site ↗</a>
+        <button type="button" data-restaurar>Restaurar estoque</button>
+        <button type="button" data-sair>Sair</button>
+      </div>
+    </aside>
+    <main class="painel-principal">
+      <p class="demo-aviso">Demonstração: as alterações ficam salvas só neste navegador e aparecem no site aberto aqui.</p>
+      <div data-app></div>
+    </main>
+  </div>
+
+  <script src="/rcar-veiculos/static/js/demo.js?v=3" defer></script>
+  <script src="/rcar-veiculos/static/js/arte.js?v=2" defer></script>
+  <script src="/rcar-veiculos/static/js/vendas.js?v=2" defer></script>
+  <script src="/rcar-veiculos/static/js/demo-admin.js?v=6" defer></script>
+</body>
+</html>

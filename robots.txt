@@ -1,0 +1,2 @@
+User-agent: *
+Sitemap: https://victorlucassantos.github.io/rcar-veiculos/sitemap.xml
